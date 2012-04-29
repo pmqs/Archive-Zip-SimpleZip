@@ -1,5 +1,5 @@
 {
-   "abstract" : "IO Interface to compressed data files/buffers",
+   "abstract" : "Create Zip archives",
    "author" : [
       "Paul Marquess <pmqs@cpan.org>"
    ],
@@ -34,10 +34,10 @@
       },
       "runtime" : {
          "requires" : {
-            "IO::Compress::Zip" : "2.03"
+            "IO::Compress::Zip" : "2.052"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "0.001"
+   "version" : "0.002"
 }

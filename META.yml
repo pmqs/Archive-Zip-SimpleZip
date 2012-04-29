@@ -1,5 +1,5 @@
 ---
-abstract: 'IO Interface to compressed data files/buffers'
+abstract: 'Create Zip archives'
 author:
   - 'Paul Marquess <pmqs@cpan.org>'
 build_requires:
@@ -20,5 +20,5 @@ no_index:
     - t
     - private
 requires:
-  IO::Compress::Zip: 2.03
-version: 0.001
+  IO::Compress::Zip: 2.052
+version: 0.002

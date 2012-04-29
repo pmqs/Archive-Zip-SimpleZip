@@ -1,6 +1,10 @@
 CHANGES
 -------
 
+  0.002 26 April 2012
+
+      * Fixed issue with Makefile.PL & version dependencies.
+
   0.001 26 April 2012
 
       * First Release

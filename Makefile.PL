@@ -18,25 +18,18 @@ WriteMakefile(
     (
       $ENV{SKIP_FOR_CORE}
         ? ()
-	    : (PREREQ_PM   => { 'IO::Compress::Zip' => 2.030,
+	    : (PREREQ_PM   => { 'IO::Compress::Zip' => 2.052,
                           }
 	      )
     ),
        
     (
     $] >= 5.005
-        ? (ABSTRACT => 'IO Interface to compressed data files/buffers',
+        ? (ABSTRACT => 'Create Zip archives',
             AUTHOR  => 'Paul Marquess <pmqs@cpan.org>')
         : ()
     ),
 
-    INSTALLDIRS => ($] >= 5.009 ? 'perl' : 'site'),
-    
-    (
-    $] >= 5.009 && $] <= 5.011001 && ! $ENV{PERL_CORE}
-        ? (INSTALLPRIVLIB    => '$(INSTALLARCHLIB)')
-        : ()
-    ),
 
     META_MERGE => {
         no_index => {

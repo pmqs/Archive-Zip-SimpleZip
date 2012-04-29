@@ -1,7 +1,7 @@
 
                            Archive-Zip-SimpleZip
 
-                               Version 0.001
+                               Version 0.002
 
                                28 April 2012
 
@@ -24,7 +24,7 @@ Before you can build Archive-Zip-SimpleZip you need to have the following
 installed on your system:
 
     * Perl 5.006 or better. 
-    * Archive::Zip::SimpleZip::Raw::Zlib
+    * IO::Compress::Zip
 
 BUILDING THE MODULE
 -------------------

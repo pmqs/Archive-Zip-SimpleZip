@@ -18,7 +18,7 @@ require Exporter ;
 our ($VERSION, @ISA, @EXPORT_OK, %EXPORT_TAGS, $SimpleZipError);
 
 $SimpleZipError= '';
-$VERSION = "0.002";
+$VERSION = "0.003";
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw( $SimpleZipError ) ;
@@ -350,6 +350,9 @@ sub addString
     my $options =  $self->{Opts}->clone();
         
     my $got = _ckParams($options, 0, @_);
+    
+    _myDie("Missing 'Name' paramter in addString")
+        if ! $got->parsed("Name");
 
 
     $self->_newStream(undef, $got);
@@ -364,7 +367,7 @@ __END__
 
 =head1 NAME
 
-Archive::Zip::SimpleZip - Write zip files/buffers
+Archive::Zip::SimpleZip - Create Zip Archives
 
 =head1 SYNOPSIS
 
@@ -468,12 +471,9 @@ See L</Options> for a full list of the options available for this method.
 
 Returns 1 if the file was added, or 0. Check the $SimpleZipError for a message.
 
-=item $z->addString($string [, OPTIONS]) 
+=item $z->addString($string, Name => "whatever", [, OPTIONS]) 
 
-The addString method writes <$string> to the zip archive.
-
-If none of the L</File Naming Options> are specified, an empty filename will 
-created in the zip archive.
+The addString method writes <$string> to the zip archive. The Name option must be supplied.
 
 See L</Options> for the options available for this method.
 
@@ -522,6 +522,9 @@ Stores the contents of C<$string> in the zip filename header field.
 
 When used with the C<add> method, this option will override any filename that
 was passed as a parameter.
+
+
+The Name option is mandatory for the C<addString> method.
 
 This option is not valid in the constructor.
 
@@ -585,9 +588,9 @@ path from the filename.
 The filename entry stored in a Zip archive is constructed as follows.
 
 The initial source for the filename entry that gets stored in the zip archive is the filename parameter supplied
-to the C<add> method. When working with the C<addString> method the filename is an empty string.
+to the C<add> method, or the value supplied with the Name option to the C<addSTring> method. 
 
-Next, if the C<Name> option is supplied that will overide the filename passed to C<add>.
+Next, for the C<add> option, if the C<Name> option is supplied that will overide the filename parameter.
 
 If the C<CanonicalName> option is enabled, and it is by default, the filename gets normalized into Unix format. 
 If the filename was absolute, it will be changed into a relative filename.

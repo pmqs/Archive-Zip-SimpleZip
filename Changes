@@ -1,6 +1,10 @@
 CHANGES
 -------
 
+  0.003 1 May 2012
+
+      * Made 'Name' option mndatory with addString.
+
   0.002 26 April 2012
 
       * Fixed issue with Makefile.PL & version dependencies.

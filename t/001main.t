@@ -22,7 +22,7 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 219 + $extra ;
+    plan tests => 223 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError)) ;
@@ -215,6 +215,23 @@ sub canonDir
         like $SimpleZipError, qr/ZipComment option only valid in constructor/,
             "  option invalid";
     } 
+    
+            
+    {
+        title "Missing Name paramter in addString";
+        
+        my $zipfile;
+            
+        my $z = new Archive::Zip::SimpleZip \$zipfile;
+        isa_ok $z, "Archive::Zip::SimpleZip";        
+        eval { $z->addString("abc") ; };
+    
+        like $@,  qr/Missing 'Name' paramter in addString/,
+            "  value  is bad";
+                   
+        like $SimpleZipError, qr/Missing 'Name' paramter in addString/,
+            "  missing filename";
+    }     
         
 }
 

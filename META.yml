@@ -1,5 +1,5 @@
 ---
-abstract: 'Create Zip archives'
+abstract: 'Create Zip Archives'
 author:
   - 'Paul Marquess <pmqs@cpan.org>'
 build_requires:
@@ -21,4 +21,4 @@ no_index:
     - private
 requires:
   IO::Compress::Zip: 2.052
-version: 0.002
+version: 0.003

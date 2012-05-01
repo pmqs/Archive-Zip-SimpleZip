@@ -25,7 +25,7 @@ WriteMakefile(
        
     (
     $] >= 5.005
-        ? (ABSTRACT => 'Create Zip archives',
+        ? (ABSTRACT => 'Create Zip Archives',
             AUTHOR  => 'Paul Marquess <pmqs@cpan.org>')
         : ()
     ),

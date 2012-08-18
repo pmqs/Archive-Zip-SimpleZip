@@ -21,4 +21,4 @@ no_index:
     - private
 requires:
   IO::Compress::Zip: 2.052
-version: 0.003
+version: 0.004

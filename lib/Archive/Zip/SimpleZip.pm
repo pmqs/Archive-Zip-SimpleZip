@@ -18,7 +18,7 @@ require Exporter ;
 our ($VERSION, @ISA, @EXPORT_OK, %EXPORT_TAGS, $SimpleZipError);
 
 $SimpleZipError= '';
-$VERSION = "0.003";
+$VERSION = "0.004";
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw( $SimpleZipError ) ;
@@ -323,6 +323,8 @@ sub add
     {
         my $fh = new IO::File "<$filename"
             or die "Cannot open file $filename: $!";
+
+        binmode $fh;
 
         my $data; 
         while ($fh->read($data, 1024 * 16))
@@ -638,9 +640,27 @@ Here are some examples
 =item C<< Minimal => 1|0 >>
 
 If specified, this option will disable the creation of all extra fields
-in the zip local and central headers. 
+in the zip local and central headers (with the exception of those needed for Zip64). 
+In particular the following fields will not be created
 
-This option is useful when interoperability with an old version of unzip is an issue. TODO - more here.
+   Extended Time
+   TODO
+
+This option is useful in a number of scenarios. 
+
+Firstly, the option may be needed if you require the zip files created 
+by C<Archive::Zip::SimpleZip> to be
+read using a legacy version of unzip or by an application that only supports
+a sub-set of the zip features.
+
+The other main use-case when C<Minimal> is handy is when the data that C<Minimal> suppresses
+is not needed, and so just adds unnecessary bloat to the zip file. 
+The extra fields that C<Archive::Zip::SimpleZip> adds by default all
+store additional information that assume the entry in the zip file corresponds to a file
+that will be stored in a filesystem.
+This information is very handy when archiving files from a filesystem - it means the unzipped files
+will more closely match their originals.
+If the zip file isn't going to be unzipped to a filesystem you can save a few bytes by enabling <Minimal>.
 
 This parameter defaults to 0.
 
@@ -650,9 +670,9 @@ This option controls whether the zip farchive is created in
 streaming mode.
 
 Note that when outputting to a file or filehandle with streaming mode disabled (C<Stream>
-is 0), the output file/handle must be seekable.
+is 0), the output file/handle I<must> be seekable.
 
-When outputting to '-' (STDOUT) Stream is automatically enabled.
+When outputting to '-' (STDOUT) C<Stream> is automatically enabled.
 
 TODO - when to use & interoperability issues.
 
@@ -855,7 +875,7 @@ By default C<Archive::Zip::SimpleZip> will  do the following
 
 =over 5
 
-=item * Use Deflate Compression for all non-directories.
+=item * Use Deflate Compression for all standard files. 
 
 =item * Create a non-streamed Zip archive
 

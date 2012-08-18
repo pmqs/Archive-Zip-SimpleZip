@@ -1,9 +1,13 @@
 CHANGES
 -------
 
+  0.004 11 August 2012
+
+      * Force binmode for input file.
+
   0.003 1 May 2012
 
-      * Made 'Name' option mndatory with addString.
+      * Made 'Name' option mandatory with addString.
 
   0.002 26 April 2012
 

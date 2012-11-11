@@ -1,6 +1,10 @@
 CHANGES
 -------
 
+  0.005 11 November 2012
+
+      * Performance improvements.
+      
   0.004 11 August 2012
 
       * Force binmode for input file.

@@ -5,9 +5,9 @@ use warnings;
 
 require 5.006;
 
-use IO::Compress::Zip 2.052 qw(:all);
-use IO::Compress::Base::Common  2.052 qw(:Parse createSelfTiedObject whatIsOutput);
-use IO::Compress::Adapter::Deflate 2.052 ;
+use IO::Compress::Zip 2.057 qw(:all);
+use IO::Compress::Base::Common  2.057 ();
+use IO::Compress::Adapter::Deflate 2.057 ;
 
 use Fcntl;
 use File::Spec;
@@ -18,7 +18,7 @@ require Exporter ;
 our ($VERSION, @ISA, @EXPORT_OK, %EXPORT_TAGS, $SimpleZipError);
 
 $SimpleZipError= '';
-$VERSION = "0.004";
+$VERSION = "0.005";
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw( $SimpleZipError ) ;
@@ -27,61 +27,59 @@ $VERSION = "0.004";
 
 Exporter::export_ok_tags('all');
 
+our %PARAMS = (
+        'name'          => [IO::Compress::Base::Common::Parse_any,       ''],
+        'comment'       => [IO::Compress::Base::Common::Parse_any,       ''],
+        'zipcomment'    => [IO::Compress::Base::Common::Parse_any,       ''],
+        'stream'        => [IO::Compress::Base::Common::Parse_boolean,   0],
+        'method'        => [IO::Compress::Base::Common::Parse_unsigned,  ZIP_CM_DEFLATE],
+        'minimal'       => [IO::Compress::Base::Common::Parse_boolean,   0],
+        'zip64'         => [IO::Compress::Base::Common::Parse_boolean,   0],
+        'filtername'    => [IO::Compress::Base::Common::Parse_code,      undef],
+        'canonicalname' => [IO::Compress::Base::Common::Parse_boolean,   1],
+        'textflag'      => [IO::Compress::Base::Common::Parse_boolean,   0],
+        'storelinks'    => [IO::Compress::Base::Common::Parse_boolean,   0],
+        #'storedirs'    => [IO::Compress::Base::Common::Parse_boolean,   0],
+        
+
+        # Zlib
+        'level'         => [IO::Compress::Base::Common::Parse_signed,    Z_DEFAULT_COMPRESSION],
+        'strategy'      => [IO::Compress::Base::Common::Parse_signed,    Z_DEFAULT_STRATEGY],
+
+        # Lzma
+        'preset'        => [IO::Compress::Base::Common::Parse_unsigned, 6],
+        'extreme'       => [IO::Compress::Base::Common::Parse_boolean,  0],
+
+        
+        # Bzip2
+        'blocksize100k' => [IO::Compress::Base::Common::Parse_unsigned,  1],
+        'workfactor'    => [IO::Compress::Base::Common::Parse_unsigned,  0],
+        'verbosity'     => [IO::Compress::Base::Common::Parse_boolean,   0],
+    );
 
 sub _ckParams
 {
     my $got = shift || IO::Compress::Base::Parameters::new();
     my $top = shift;
        
-    $got->parse(
-        {
-          
-            'Name'          => [0, 1, Parse_any,       ''],
-            'Comment'       => [0, 1, Parse_any,       ''],
-            'ZipComment'    => [0, 1, Parse_any,       ''],
-            'Stream'        => [1, 1, Parse_boolean,   0],
-            'Method'        => [0, 1, Parse_unsigned,  ZIP_CM_DEFLATE],
-            'Minimal'       => [0, 1, Parse_boolean,   0],
-            'Zip64'         => [0, 1, Parse_boolean,   0],
-            'FilterName'    => [0, 1, Parse_code,      undef],
-            'CanonicalName' => [0, 1, Parse_boolean,   1],
-            'TextFlag'      => [0, 1, Parse_boolean,   0],
-            'StoreLinks'    => [0, 1, Parse_boolean,   0],
-            #'StoreDirs'    => [0, 1, Parse_boolean,   0],
-            
-
-            # Zlib
-            'Level'         => [0, 1, Parse_signed,    Z_DEFAULT_COMPRESSION],
-            'Strategy'      => [0, 1, Parse_signed,    Z_DEFAULT_STRATEGY],
-
-            # Lzma
-            'Preset'        => [0, 1, Parse_unsigned, 6],
-            'Extreme'       => [1, 1, Parse_boolean,  0],
-
-            
-            # Bzip2
-            'BlockSize100K' => [0, 1, Parse_unsigned,  1],
-            'WorkFactor'    => [0, 1, Parse_unsigned,  0],
-            'Verbosity'     => [0, 1, Parse_boolean,   0],
-            
-        }, 
-        @_) or _myDie("Parameter Error: $got->{Error}")  ;
+    $got->parse(\%PARAMS, @_) 
+        or _myDie("Parameter Error: " . $got->getError())  ;
 
     if ($top)
     {
-        for my $opt ( qw(Name Comment) )
+        for my $opt ( qw(name comment) )
         {
             _myDie("$opt option not valid in constructor")  
                 if $got->parsed($opt);
         }
                         
-        $got->value('CRC32'   => 1);
-        $got->value('ADLER32' => 0);
-        $got->value('OS_Code' => $Compress::Raw::Zlib::gzip_os_code);
+        $got->setValue('crc32'   => 1);
+        $got->setValue('adler32' => 0);
+        $got->setValue('os_code' => $Compress::Raw::Zlib::gzip_os_code);
     }
     else
     {
-        for my $opt ( qw( ZipComment) )
+        for my $opt ( qw( zipcomment) )
         {
             _myDie("$opt option only valid in constructor")  
                 if $got->parsed($opt);
@@ -140,7 +138,7 @@ sub new
     }
 
     my $isSTDOUT = ($outValue eq '-') ;
-    my $outType = whatIsOutput($outValue);
+    my $outType = IO::Compress::Base::Common::whatIsOutput($outValue);
     
     if ($outType eq 'filename')
     {
@@ -162,8 +160,8 @@ sub new
     }
     
     my $got = _ckParams(undef, 1, @_);
-    $got->value('AutoClose' => 1) unless $outType eq 'handle' ;
-    $got->value('Stream' => 1) if $isSTDOUT ;   
+    $got->setValue('autoclose' => 1) unless $outType eq 'handle' ;
+    $got->setValue('stream' => 1) if $isSTDOUT ;   
 
     my $obj = {
                 ZipFile      => $outValue,
@@ -181,6 +179,7 @@ sub new
 sub DESTROY
 {
     my $self = shift;
+       
     $self->close();
 }
 
@@ -195,7 +194,7 @@ sub close
     
     if ($self->{FilesWritten})
     {
-        defined $self->{Zip} && $self->{Zip}->close()
+        defined $self->{Zip} && $self->{Zip}->flush() && $self->{Zip}->close()        
             or return 0 ;
     }
       
@@ -211,7 +210,7 @@ sub _newStream
     
     while( my ($name, $value) =  each %user_options)
     {
-        $options->value($name, $value);
+        $options->setValue(lc $name, $value);
     }
 
     if (defined $filename)
@@ -219,16 +218,16 @@ sub _newStream
         IO::Compress::Zip::getFileInfo(undef, $options, $filename) ;
     
         # Force STORE for directories, symbolic links & empty files
-        $options->value(Method => ZIP_CM_STORE)  
+        $options->setValue(method => ZIP_CM_STORE)  
             if -d $filename || -z _ || -l $filename ;
     }
 
     # Archive::Zip::SimpleZip handles canonical    
-    $options->value(CanonicalName => 0);
+    $options->setValue(canonicalname => 0);
 
     if (! defined $self->{Zip}) {
-        $self->{Zip} = createSelfTiedObject('IO::Compress::Zip', \$SimpleZipError);    
-        $self->{Zip} ->_create($options, $self->{FH})        
+        $self->{Zip} = IO::Compress::Base::Common::createSelfTiedObject('IO::Compress::Zip', \$SimpleZipError);    
+        $self->{Zip}->_create($options, $self->{FH})        
             or die "$SimpleZipError";
     }
     else {
@@ -298,14 +297,14 @@ sub add
         
     my $got = _ckParams($options, 0, @_);
 
-    my $isLink = $got->value('StoreLinks') && -l $filename ;
+    my $isLink = $got->getValue('storelinks') && -l $filename ;
     
     return 0
         if $filename eq '.' || $filename eq '..';
         
-    if (! $got->parsed("Name") )
+    if (! $got->parsed("name") )
     {
-        $got->value("Name", IO::Compress::Zip::canonicalName($filename, -d $filename && ! $isLink));
+        $got->setValue(name => IO::Compress::Zip::canonicalName($filename, -d $filename && ! $isLink));
     }
 
     $self->_newStream($filename, $got);
@@ -353,8 +352,8 @@ sub addString
         
     my $got = _ckParams($options, 0, @_);
     
-    _myDie("Missing 'Name' paramter in addString")
-        if ! $got->parsed("Name");
+    _myDie("Missing 'Name' parameter in addString")
+        if ! $got->parsed("name");
 
 
     $self->_newStream(undef, $got);
@@ -362,6 +361,7 @@ sub addString
     
     return 1;            
 }
+
 
 1;
 

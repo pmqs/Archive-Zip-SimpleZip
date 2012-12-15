@@ -18,7 +18,7 @@ WriteMakefile(
     (
       $ENV{SKIP_FOR_CORE}
         ? ()
-	    : (PREREQ_PM   => { 'IO::Compress::Zip' => 2.057,
+	    : (PREREQ_PM   => { 'IO::Compress::Zip' => 2.059,
                           }
 	      )
     ),

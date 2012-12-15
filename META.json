@@ -34,10 +34,10 @@
       },
       "runtime" : {
          "requires" : {
-            "IO::Compress::Zip" : "2.057"
+            "IO::Compress::Zip" : "2.059"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "0.005"
+   "version" : "0.006"
 }

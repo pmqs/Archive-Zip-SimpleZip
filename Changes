@@ -1,7 +1,13 @@
 CHANGES
 -------
 
-  0.005 11 November 2012
+  0.006 10 December 2012
+
+      * Added openMember to allow filehandle access to writing zip files.
+      
+      * Added Encode option.
+      
+  0.005 10 November 2012
 
       * Performance improvements.
       

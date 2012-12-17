@@ -9,16 +9,16 @@ use IO::Compress::Zip 2.059 qw(:all);
 use IO::Compress::Base::Common  2.059 ();
 use IO::Compress::Adapter::Deflate 2.059 ;
 
-use Fcntl;
-use File::Spec;
-use IO::File ;
+use Fcntl ();
+use File::Spec ();
+use IO::File ();
 use Carp;
 require Exporter ;
 
 our ($VERSION, @ISA, @EXPORT_OK, %EXPORT_TAGS, $SimpleZipError);
 
 $SimpleZipError= '';
-$VERSION = "0.006";
+$VERSION = "0.007";
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw( $SimpleZipError ) ;
@@ -478,7 +478,7 @@ Below is an example of how this module is used to add the two files
 
     $z->close();
 
-The data written to a zip archive doesn’t need to come from the filesystem.
+The data written to a zip archive doesn't need to come from the filesystem.
 You can also write string data directly to the zip archive using the
 C<addString> method, like this
 

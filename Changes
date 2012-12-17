@@ -1,6 +1,10 @@
 CHANGES
 -------
 
+  0.007 17 December 2012
+  
+        * Removed non-ASIII char that triggered failure in t/999pod.t.
+    
   0.006 10 December 2012
 
       * Added openMember to allow filehandle access to writing zip files.

@@ -10,7 +10,6 @@ BEGIN {
 use lib qw(t t/compress);
 use strict;
 use warnings;
-#use bytes;
 
 use Test::More ; 
 use CompTestUtils;
@@ -23,7 +22,7 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 454 + $extra ;
+    plan tests => 798 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError)) ;
@@ -395,21 +394,54 @@ SKIP:
     title "simple dir" ;
 
     my $lex1 = new LexFile my $zipfile;
-    my $lex = new LexDir my $file1;
+    my $lex = new LexDir my $dir1;
 
-    ok -d $file1;
+    ok -d $dir1;
+
+    my $dir2 = File::Spec->catfile($dir1, "dir2");
+    ok mkdir $dir2;
+    ok -d $dir2, "$dir2 is a directory";
 
     my $z = new Archive::Zip::SimpleZip $zipfile ;
     isa_ok $z, "Archive::Zip::SimpleZip";
 
-    ok $z->add($file1), "add ok";
+    ok $z->add($dir1), "add $dir1 ok";
+    ok $z->add($dir2), "add $dir2 ok";
     ok $z->close, "closed ok";
 
     my @got = getContent($zipfile);
-    is @got, 1, "one entry in zip";
-    is $got[0]{Name}, canonDir($file1);
+    is @got, 2, "two entries in zip";
+    is $got[0]{Name}, canonDir($dir1);
+    is substr($got[0]{Name}, -1), "/";
     is $got[0]{Payload}, "";
+    is $got[1]{Name}, canonDir($dir2);
+    is substr($got[1]{Name}, -1), "/";
+    is $got[1]{Payload}, "";
 }
+
+{
+    title "Absolute path converted to relative" ;
+
+    my $lex1 = new LexFile my $zipfile;
+
+
+    my $z = new Archive::Zip::SimpleZip $zipfile ;
+    isa_ok $z, "Archive::Zip::SimpleZip";
+
+    my $dir1 = "fred" ;
+    my $dir2 = $dir1 . "joe";
+    ok $z->addString("1", Name => "/" . $dir1), "add /$dir1 ok";
+    ok $z->addString("2", Name => "/" . $dir2), "add /$dir2 ok";
+    ok $z->close, "closed ok";
+
+    my @got = getContent($zipfile);
+    is @got, 2, "two entries in zip";
+    is $got[0]{Name}, $dir1;
+    is $got[0]{Payload}, "1";
+    is $got[1]{Name}, $dir2;
+    is $got[1]{Payload}, "2";
+}
+
 
 SKIP:
 {
@@ -971,39 +1003,59 @@ SKIP:
     is $fh1, undef;    
 }
 
+for my $ix (1 .. 5)
 {
-    title "raw - two members in sequence - both FH";
+    title "raw - $ix members in sequence - all FH";
     
-    my $string;
-    my $zipfile = \$string;
-    my $lex = new LexFile my $file1;
-    
-    my $payload1 = "hello world";
-    my $payload2 = "goodnight vienna";
-    
-    my $z = new Archive::Zip::SimpleZip $zipfile ;
-    isa_ok $z, "Archive::Zip::SimpleZip";
+    for my $to ( qw(filehandle buffer filename))
+    {
+        title "To $to";
 
-    my $fh1 = $z->openMember(Name => "abc");
-    isa_ok $fh1, "Archive::Zip::SimpleZip::Handle";    
-    
-    print $fh1 $payload1 ;
-    
-    ok $fh1->close, "closed ok";
-    
-    my $fh2 = $z->openMember(Name => "def");
-    isa_ok $fh2, "Archive::Zip::SimpleZip::Handle";  
-    $fh2->print($payload2) ;
-    ok $fh2->close, "closed ok";
+        my $lex = new LexFile my $name2 ;
+        my $output;
+        my $buffer;
+        my $zipfile;
+
+        if ($to eq 'buffer')
+        {
+            $output = $zipfile = \$buffer ; 
+        }
+        elsif ($to eq 'filename')
+        {
+            $output = $zipfile = $name2 ;
+        }
+        elsif ($to eq 'filehandle')
+        {
+            $zipfile = $name2;
+            $output = new IO::File ">$name2" ;
+        }
+
+        my $payload1 = "hello world";
         
-    ok $z->close, "closed ok";    
+        my $z = new Archive::Zip::SimpleZip $zipfile ;
+        isa_ok $z, "Archive::Zip::SimpleZip";
 
-    my @got = getContent($zipfile);
-    is @got, 2, "two entries in zip";
-    is $got[0]{Name}, canonFile("abc");  
-    is $got[0]{Payload}, $payload1;      
-    is $got[1]{Name}, canonFile("def"); 
-    is $got[1]{Payload}, $payload2;
+        for my $m (1 .. $ix)
+        {
+            my $fh1 = $z->openMember(Name => "abc$m");
+            isa_ok $fh1, "Archive::Zip::SimpleZip::Handle";    
+            
+            print $fh1 $payload1 . "$m" ;
+            
+            ok $fh1->close, "closed member $to-$ix-$m ok";
+        }
+        
+        ok $z->close, "closed ok";    
+
+        my @got = getContent($zipfile);
+        is @got, $ix, "$to-$ix entries in zip";
+        for my $m (0 .. $ix -1)
+        {
+            my $i = $m +1 ;
+            is $got[$m]{Name}, canonFile("abc$i"), "name $to-$ix-$m ok";  
+            is $got[$m]{Payload}, "$payload1$i", "payload $to-$ix-$m ok";      
+        }
+    }
 }
 
 SKIP:
@@ -1064,6 +1116,65 @@ SKIP:
         ok $fh = $z->openMember(Name => "3");
         print $fh $string;
         is tell($fh), bytes::length($string);
+        ok close $fh; 
+         
+        ok $z->close, "closed ok";    
+    
+        my @got = getContent($zipfile);
+        is @got, 3, "three entries in zip";
+        is $got[0]{Name},    canonFile("1");     
+        is $got[0]{Payload}, $encString;          
+        is $got[1]{Name},    canonFile("2"); 
+        is $got[1]{Payload}, $encString;   
+        is $got[2]{Name},    canonFile("3"); 
+        is $got[2]{Payload}, $encString;
+    }        
+}
+
+{
+    title "no Encode option";
+    
+    my $string = "hello world";
+    my $encString = $string;
+    my $buffer = $encString;
+    
+    for my $to ( qw(filehandle buffer filename))
+    {
+        title "Encode: To $to";
+
+        my $lex2 = new LexFile my $name2 ;
+        my $output;
+        my $buffer;
+        my $zipfile;
+
+        if ($to eq 'buffer')
+        {
+            $output = $zipfile = \$buffer ; 
+        }
+        elsif ($to eq 'filename')
+        {
+            $output = $zipfile = $name2 ;
+        }
+        elsif ($to eq 'filehandle')
+        {
+            $zipfile = $name2;
+            $output = new IO::File ">$name2" ;
+        }
+
+        my $z = new Archive::Zip::SimpleZip $output ;
+        isa_ok $z, "Archive::Zip::SimpleZip";
+
+        my $lex = new LexFile my $file1;
+        writeFile($file1, $encString);
+        
+        ok $z->add($file1, Name => "1");
+        ok $z->addString($string, Name => "2");  
+        
+        my $fh;
+        ok $fh = $z->openMember(Name => "3");
+        print $fh $string;
+        is tell($fh), bytes::length($string);
+        #flush $fh; 
         ok close $fh; 
          
         ok $z->close, "closed ok";    
@@ -1212,4 +1323,43 @@ SKIP:
         is $got[1]{Payload}, $payload2 . $payload2;
     }    
         
+}
+
+{
+    for my $canonical (1, 0)
+    {
+        title "CanonicalName => $canonical" ;        
+        my $output ;
+        my $z = new Archive::Zip::SimpleZip \$output, CanonicalName => $canonical;
+        isa_ok $z, "Archive::Zip::SimpleZip";
+
+        my $lex = new LexFile my $file1;
+        my $data1 = "one";
+        my $data2 = "two";
+        my $data3 = "three";
+        writeFile($file1, $data1);
+        
+        my $name1 = "/abc/def1" ;
+        my $name2 = "/abc/def2" ;
+        my $name3 = "/abc/def3" ;
+
+        ok $z->add($file1, Name => $name1);
+        ok $z->addString($data2, Name => $name2);  
+        
+        my $fh;
+        ok $fh = $z->openMember(Name => $name3);
+        print $fh $data3;
+        ok close $fh; 
+         
+        ok $z->close, "closed ok";    
+    
+        my @got = getContent(\$output);
+        is @got, 3, "three entries in zip";
+        is $got[0]{Name},    $canonical ? canonFile($name1) : $name1;     
+        is $got[0]{Payload}, $data1;          
+        is $got[1]{Name},    $canonical ? canonFile($name2) : $name2;     
+        is $got[1]{Payload}, $data2;   
+        is $got[2]{Name},    $canonical ? canonFile($name3) : $name3;     
+        is $got[2]{Payload}, $data3;
+    }
 }

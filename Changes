@@ -1,6 +1,12 @@
 CHANGES
 -------
 
+  0.008 7 January 2013
+  
+        * Fixes to allow disabling of CanonicalName
+
+        * Document how to use File::Find to zip a directory tree.
+    
   0.007 17 December 2012
   
         * Removed non-ASIII char that triggered failure in t/999pod.t.

@@ -5,9 +5,9 @@ use warnings;
 
 require 5.006;
 
-use IO::Compress::Zip 2.059 qw(:all);
-use IO::Compress::Base::Common  2.059 ();
-use IO::Compress::Adapter::Deflate 2.059 ;
+use IO::Compress::Zip 2.060 qw(:all);
+use IO::Compress::Base::Common  2.060 ();
+use IO::Compress::Adapter::Deflate 2.060 ;
 
 use Fcntl ();
 use File::Spec ();
@@ -18,7 +18,7 @@ require Exporter ;
 our ($VERSION, @ISA, @EXPORT_OK, %EXPORT_TAGS, $SimpleZipError);
 
 $SimpleZipError= '';
-$VERSION = "0.007";
+$VERSION = "0.008";
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw( $SimpleZipError ) ;
@@ -212,8 +212,9 @@ sub close
                 bless $self->{Zip}, "IO::Compress::Zip";                
              }
              
-            $self->{Zip}->flush() || return 0;
+            $self->{Zip}->_flushCompressed() || return 0;
             $self->{Zip}->close() || return 0;
+            delete $self->{Zip} ;
          }
     }
       
@@ -238,15 +239,15 @@ sub _newStream
     # Archive::Zip::SimpleZip handles canonical    
     $options->setValue(canonicalname => 0);
 
-    
+    $! = 0;    
     if (! defined $self->{Zip}) {
         $self->{Zip} = IO::Compress::Base::Common::createSelfTiedObject('IO::Compress::Zip', \$SimpleZipError);    
         $self->{Zip}->_create($options, $self->{FH})        
-            or die "$SimpleZipError";
+            or die "_create $SimpleZipError";
     }
     else {
         $self->{Zip}->_newStream($options)
-            or die "$SimpleZipError";
+            or die "_newStream - $SimpleZipError";
     }
     
     ++ $self->{FilesWritten} ;
@@ -311,19 +312,27 @@ sub add
         
     my $got = _ckParams($options, 0, @_);
     
-    # Force Encode off .
+    # Force Encode off.
     $got->setValue('encode', undef);
 
     my $isLink = $got->getValue('storelinks') && -l $filename ;
+    my $isDir = -d $filename;
     
     return 0
         if $filename eq '.' || $filename eq '..';
-        
-    if (! $got->parsed("name") )
-    {
-        $got->setValue(name => IO::Compress::Zip::canonicalName($filename, -d $filename && ! $isLink));
+    
+    if ($options->getValue("canonicalname"))
+    {    
+        if (! $got->parsed("name"))
+        {
+            $got->setValue(name => IO::Compress::Zip::canonicalName($filename, $isDir && ! $isLink));
+        }
+        else
+        {
+            $got->setValue(name => IO::Compress::Zip::canonicalName($got->getValue("name"), $isDir && ! $isLink));     
+        }
     }
-
+    
     $self->_newStream($filename, $got);
     
     if($isLink)
@@ -372,6 +381,9 @@ sub addString
     _myDie("Missing 'Name' parameter in addString")
         if ! $got->parsed("name");
 
+    $got->setValue(name => IO::Compress::Zip::canonicalName($got->getValue("name")))
+        if $options->getValue("canonicalname") ;        
+
     $self->_newStream(undef, $got);
     $self->{Zip}->write($string);    
     
@@ -390,6 +402,9 @@ sub openMember
     
     _myDie("Missing 'Name' parameter in openMember")
         if ! $got->parsed("name");
+        
+    $got->setValue(name => IO::Compress::Zip::canonicalName($got->getValue("name")))
+        if $options->getValue("canonicalname") ;           
 
     $self->_newStream(undef, $got);
 
@@ -420,7 +435,6 @@ sub openMember
         bless $self, "IO::Compress::Zip" ;
         1;
     }
-
 
     *CLOSE    = \&close;
 }
@@ -1129,9 +1143,41 @@ the path from the filename before it gets written to the zip archive,
 
     $z->close();
 
-=head2 Working with File::Find 
+=head2 Adding a directory tree to a Zip archive 
 
-TODO
+If you need to add all (or part) of a directory tree into a Zip archive,
+you can use the standard Perl module C<File::Find> in conjunction with this
+module.
+
+The code snippet below assumes you want the non-directories files in the
+directory tree C<myDir> added to the zip archive C<found.zip>.  It also
+assume you don't want the files added to include any part of the C<myDir>
+relative path. 
+
+    use strict;
+    use warnings;
+
+    use Archive::Zip::SimpleZip;
+    use File::Find;
+
+    my $filename = "found.zip";
+    my $dir = "myDir";
+    my $z = new Archive::Zip::SimpleZip $filename 
+        or die "Cannot open file $filename\n";
+
+    find( sub { $z->add($_) if ! -d $_ }, $dir);
+
+    $z->close();
+
+If you I<do> want to include relative paths, pass the <$File::Find::name>
+variable to the C<Name> option, as shown below.
+
+    find( sub 
+          { 
+              $z->add($_, Name => $File::Find::name)                        
+                   if ! -d $_ 
+          },
+          $dir);
 
 =head2 Writing a zip archive to a socket
 
@@ -1244,7 +1290,7 @@ it).
 
 If you plan to create a streamed Zip file be aware that it will be slightly
 larger than the non-streamed equivalent. If the files you archive are
-32-bit the overhead will be an extra bytes per file written to the zip
+32-bit the overhead will be an extra 16 bytes per file written to the zip
 archive. For 64-bit it is 24 bytes per file.
 
 
@@ -1264,7 +1310,7 @@ See the Changes file.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2012 Paul Marquess. All rights reserved.
+Copyright (c) 2012-2013 Paul Marquess. All rights reserved.
 
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

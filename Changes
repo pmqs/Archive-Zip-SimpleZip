@@ -1,15 +1,21 @@
 CHANGES
 -------
 
+  0.009 17 February 2013
+  
+      * added addFileHandle method.
+      
+      * beefed up addMember
+  
   0.008 7 January 2013
   
-        * Fixes to allow disabling of CanonicalName
+      * Fixes to allow disabling of CanonicalName
 
-        * Document how to use File::Find to zip a directory tree.
+      * Document how to use File::Find to zip a directory tree.
     
   0.007 17 December 2012
   
-        * Removed non-ASIII char that triggered failure in t/999pod.t.
+      * Removed non-ASIII char that triggered failure in t/999pod.t.
     
   0.006 10 December 2012
 

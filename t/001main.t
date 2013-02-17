@@ -22,7 +22,7 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 798 + $extra ;
+    plan tests => 833 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError)) ;
@@ -234,6 +234,23 @@ sub canonDir
         like $SimpleZipError, qr/Missing 'Name' parameter in addString/,
             "  missing filename";
     }     
+    
+            
+    {
+        title "Missing Name paramter in addFileHandle";
+        
+        my $zipfile;
+            
+        my $z = new Archive::Zip::SimpleZip \$zipfile;
+        isa_ok $z, "Archive::Zip::SimpleZip";        
+        eval { $z->addFileHandle("abc") ; };
+    
+        like $@,  qr/Missing 'Name' parameter in addFileHandle/,
+            "  value  is bad";
+                   
+        like $SimpleZipError, qr/Missing 'Name' parameter in addFileHandle/,
+            "  missing filename";
+    }       
         
 }
 
@@ -803,7 +820,29 @@ SKIP:
     is $got[0]{Payload}, $payload;
 }
 
+{
+    title "addFileHandle: simple output to string" ;
 
+    my $string;
+    my $zipfile = \$string;
+    my $lex = new LexFile my $file1;
+
+    my $payload = "hello world";
+    writeFile($file1, $payload);
+
+    my $z = new Archive::Zip::SimpleZip $zipfile ;
+    isa_ok $z, "Archive::Zip::SimpleZip";
+
+    my $fh;
+    ok open($fh, "<$file1");
+    ok $z->addFileHandle($fh, Name => "abc"), "addFileHandle ok";
+    ok $z->close, "closed ok";
+
+    my @got = getContent($zipfile);
+    is @got, 1, "one entry in zip";
+    is $got[0]{Name}, canonFile("abc");
+    is $got[0]{Payload}, $payload;
+}
 
 {
     title "raw - one member, explicit close";
@@ -823,12 +862,12 @@ SKIP:
     print $fh $payload1 ;
     
     ok close($fh), "closed ok";      
-    ok $z->close, "closed ok";    
-    
+    ok $z->close, "closed ok";  
+      
     my @got = getContent($zipfile);
     is @got, 1, "one entry in zip";
     is $got[0]{Name}, canonFile("abc");  
-    is $got[0]{Payload}, $payload1;      
+    is $got[0]{Payload}, $payload1;   
 }
 
 {
@@ -883,7 +922,6 @@ SKIP:
     is @got, 1, "one entry in zip";
     is $got[0]{Name}, canonFile("abc");  
     is $got[0]{Payload}, $payload1;      
-
 }
 
 {
@@ -994,13 +1032,71 @@ SKIP:
     my $fh = $z->openMember(Name => "abc");
     isa_ok $fh, "Archive::Zip::SimpleZip::Handle";    
     
-    print $fh $payload1 ;
+    ok print $fh $payload1 ;
     
     # Not closed
     #ok $fh->close, "closed ok";
     
     my $fh1 = $z->openMember(Name => "def");
     is $fh1, undef;    
+}
+
+{
+    title "raw - write to closed member";
+    
+    my $string;
+    my $zipfile = \$string;
+    my $lex = new LexFile my $file1;
+    
+    my $payload1 = "hello world";
+    my $payload2 = "goodnight vienna";
+    
+    my $z = new Archive::Zip::SimpleZip $zipfile ;
+    isa_ok $z, "Archive::Zip::SimpleZip";
+
+    my $fh = $z->openMember(Name => "abc");
+    isa_ok $fh, "Archive::Zip::SimpleZip::Handle";    
+    
+    ok print $fh $payload1 ;
+
+    ok $fh->close, "closed ok";
+    
+    ok ! print $fh $payload1 ;
+
+    ok $z->close();
+    
+    my @got = getContent($zipfile);
+    is @got, 1, "one entry in zip";
+    is $got[0]{Name}, canonFile("abc");  
+    is $got[0]{Payload}, $payload1;      
+}
+
+{
+    title "raw - write to closed zip";
+    
+    my $string;
+    my $zipfile = \$string;
+    my $lex = new LexFile my $file1;
+    
+    my $payload1 = "hello world";
+    my $payload2 = "goodnight vienna";
+    
+    my $z = new Archive::Zip::SimpleZip $zipfile ;
+    isa_ok $z, "Archive::Zip::SimpleZip";
+
+    my $fh = $z->openMember(Name => "abc");
+    isa_ok $fh, "Archive::Zip::SimpleZip::Handle";    
+    
+    ok print $fh $payload1 ;
+
+    ok $z->close();
+        
+    ok ! print $fh $payload1 ;
+    
+    my @got = getContent($zipfile);
+    is @got, 1, "one entry in zip";
+    is $got[0]{Name}, canonFile("abc");  
+    is $got[0]{Payload}, $payload1;      
 }
 
 for my $ix (1 .. 5)
@@ -1038,7 +1134,8 @@ for my $ix (1 .. 5)
         for my $m (1 .. $ix)
         {
             my $fh1 = $z->openMember(Name => "abc$m");
-            isa_ok $fh1, "Archive::Zip::SimpleZip::Handle";    
+            isa_ok $fh1, "Archive::Zip::SimpleZip::Handle"
+                or diag "Error for $m is $SimpleZipError";    
             
             print $fh1 $payload1 . "$m" ;
             

@@ -12,13 +12,14 @@ use IO::Compress::Adapter::Deflate 2.060 ;
 use Fcntl ();
 use File::Spec ();
 use IO::File ();
+use Scalar::Util ();
 use Carp;
 require Exporter ;
 
 our ($VERSION, @ISA, @EXPORT_OK, %EXPORT_TAGS, $SimpleZipError);
 
 $SimpleZipError= '';
-$VERSION = "0.008";
+$VERSION = "0.009";
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw( $SimpleZipError ) ;
@@ -43,6 +44,8 @@ our %PARAMS = (
         'encode'       => [IO::Compress::Base::Common::Parse_any,        undef],
         #'extrafieldlocal'  => [IO::Compress::Base::Common::Parse_any,    undef],
         #'extrafieldcentral'=> [IO::Compress::Base::Common::Parse_any,    undef],
+        'filtercontainer' => [IO::Compress::Base::Common::Parse_code,  undef],
+        
         
 
         # Zlib
@@ -181,7 +184,7 @@ sub new
                 FilesWritten => 0,
                 Opts         => $got,
                 Error        => undef,
-                Raw          => 0,                
+                Raw          => undef,                
               };
 
     bless $obj, $class;
@@ -189,8 +192,7 @@ sub new
 
 sub DESTROY
 {
-    my $self = shift;
-       
+    my $self = shift;       
     $self->close();
 }
 
@@ -202,14 +204,13 @@ sub close
         if ! $self->{Open} ; 
 
     $self->{Open} = 0;
-    
-    if ($self->{FilesWritten})
+    if ($self->{FilesWritten} || defined $self->{Raw})
     {
          if(defined $self->{Zip})
-         {       
-             if ($self->{Raw})   
+         {                   
+             if (defined $self->{Raw})   
              {
-                bless $self->{Zip}, "IO::Compress::Zip";                
+                 $self->{Raw} = undef ;
              }
              
             $self->{Zip}->_flushCompressed() || return 0;
@@ -290,7 +291,7 @@ sub _stdPreq
         if ! $self->{Open} ;
             
     return $self->_setError(0, "openMember filehandle already open") 
-        if  $self->{Raw};
+        if  defined $self->{Raw};
            
      return 1;    
 }
@@ -390,6 +391,35 @@ sub addString
     return 1;            
 }
 
+sub addFileHandle
+{
+    my $self = shift;
+    my $fh   = shift;   
+
+    $self->_stdPreq or return 0 ;
+
+    my $options =  $self->{Opts}->clone() ;
+        
+    my $got = _ckParams($options, 0, @_);
+    
+    _myDie("Missing 'Name' parameter in addFileHandle")
+        if ! $got->parsed("name");
+
+    $got->setValue(name => IO::Compress::Zip::canonicalName($got->getValue("name")))
+        if $options->getValue("canonicalname") ;        
+
+    $self->_newStream(undef, $got);
+    
+    my $data; 
+
+    while ($fh->read($data, 1024 * 16))
+    {
+        $self->{Zip}->write($data);
+    }     
+    
+    return 1;   
+}
+
 sub openMember
 {
     my $self    = shift;     
@@ -407,36 +437,143 @@ sub openMember
         if $options->getValue("canonicalname") ;           
 
     $self->_newStream(undef, $got);
+  
+    my $z = IO::Compress::Base::Common::createSelfTiedObject("Archive::Zip::SimpleZip::Handle", \$SimpleZipError) ;
 
     $self->{Raw} = 1;
-    *{ $self->{Zip} }->{SZ} = \$self->{Raw} ;
     
-    return bless $self->{Zip}, "Archive::Zip::SimpleZip::Handle" ;          
+    *$z->{Open} = 1 ;
+    *$z->{SZ} = $self;
+    Scalar::Util::weaken *$z->{SZ}; # for 5.8
+    
+    return $z;        
 }
+
 
 {
     package Archive::Zip::SimpleZip::Handle ;
+
+          
+    sub TIEHANDLE
+    {
+        return $_[0] if ref($_[0]);
+        die "OOPS\n" ;
+    }
+      
+    sub UNTIE
+    {
+        my $self = shift ;
+    }
     
-    our (@ISA);   
-    @ISA = qw(IO::Compress::Zip);
-           
     sub DESTROY
     {
-        my $self = shift ;  
-        $self->close();       
-        undef $self;
-    } 
+        my $self = shift ;
+        local ($., $@, $!, $^E, $?);
+        $self->close() ;
     
+        # TODO - memory leak with 5.8.0 - this isn't called until 
+        #        global destruction
+        #
+        %{ *$self } = () ;
+        undef $self ;
+    }
+           
+   
     sub close
     {
         my $self = shift ;
-        ${ *$self->{SZ} } = 0;
-        *$self->{SZ} = undef ;
-        bless $self, "IO::Compress::Zip" ;
+        return 1 if ! *$self->{Open};
+        
+        *$self->{Open} = 0 ;
+        
+#        untie *$self 
+#            if $] >= 5.008 ;
+
+        if (defined *$self->{SZ})
+        {
+            *$self->{SZ}{Raw} = undef ;
+            *$self->{SZ} = undef ;
+        }
+
         1;
     }
+    
+    sub print
+    {
+        my $self = shift;
+        $self->_stdPreq() or return 0 ;    
+        
+        *$self->{SZ}{Zip}->print(@_);
+    }
+    
+    sub printf
+    {
+        my $self = shift;
+        $self->_stdPreq() or return 0 ;
+        
+        *$self->{SZ}{Zip}->printf(@_);
+    }
+    
+    sub syswrite
+    {
+        my $self = shift;
+        $self->_stdPreq() or return 0 ;
+        
+        *$self->{SZ}{Zip}->syswrite(@_);
+    }
+    
+    sub tell
+    {
+        my $self = shift;
+        $self->_stdPreq() or return 0 ;
+        
+        *$self->{SZ}{Zip}->tell(@_);
+    }
+    
+    sub eof
+    {
+        my $self = shift;
+        $self->_stdPreq() or return 0 ;
+        
+        *$self->{SZ}{Zip}->eof;
+    }
 
+    sub _stdPreq
+    {
+        my $self = shift;
+                                           
+        return _setError("Zip file closed") 
+            if ! defined defined *$self->{SZ} || ! *$self->{SZ}{Open} ; 
+            
+                            
+        return _setError("openMember filehandle closed") 
+            if  ! *$self->{Open} || ! defined *$self->{SZ}{Raw};
+            
+        return 0 
+            if *$self->{SZ}{Error} ; 
+                          
+         return 1;    
+    }
+    
+    sub _setError
+    {  
+        $Archive::Zip::SimpleZip::SimpleZipError = $_[0] ;
+        return 0;
+    }        
+       
+    sub binmode { 1 }
+#    sub clearerr { $Archive::Zip::SimpleZip::SimpleZipError = '' }
+
+    *FILENO   = \&fileno;
+    *PRINT    = \&print;
+    *PRINTF   = \&printf;
+    *WRITE    = \&syswrite;
+    *write    = \&syswrite;
+    *TELL     = \&tell;
+    *EOF      = \&eof;
     *CLOSE    = \&close;
+    *BINMODE  = \&binmode;
+
 }
 
 1;
@@ -456,14 +593,12 @@ Archive::Zip::SimpleZip - Create Zip Archives
 
     $z->add("/some/file1.txt");
     $z->addString("some text", Name => "myfile");
+    $z->addFileHandle($FH, Name => "myfile2") ;
 
     $fh = $z->openMember(Name => "mydata1.txt");
     print $fh "some data" ;
+    $fh->print("some more data") ;
     close $fh;
-
-    $fh = $z->openMember(Name => "mydata2.txt");
-    $fh->print("some data") ;
-    $fh->close() ;
 
     $z->close();
 
@@ -517,11 +652,23 @@ file output functions, like C<print>.
     my $fh = $z->openMember(Name => "file3.txt");
 
     $fh->print("some data");
+    # can also use print $fh "some data"
 
     print $fh "more data" ;
 
     $fh->close() ; 
     # can also use close $fh;
+
+    $z->close();
+
+You can also "drop" a filehandle into
+
+    use Archive::Zip::SimpleZip qw($SimpleZipError) ;
+
+    my $z = new Archive::Zip::SimpleZip "my4.zip"
+        or die "Cannot create zip file: $SimpleZipError\n" ;
+
+    my $fh = $z->addFileHandle(FH, Name => "file3.txt");
 
     $z->close();
 
@@ -612,6 +759,21 @@ See L</Options> for the options available for this method.
 Returns 1 if the file was added, or 0. Check the $SimpleZipError for a
 message.
 
+=item $z->addFileHandle($fh, Name => "whatever" [, OPTIONS]) 
+
+The C<addFileHandle> method assumes that C<$fh> is a valid filehandle that
+is opened for reading. 
+
+It writes what is read from C<$fh> to the zip archive 
+until it reaches the eof. The filehandle, C<$fh>, will not be closed by C<addFileHandle>.
+
+The C<Name> option I<must> be supplied.
+
+See L</Options> for the options available for this method.
+
+Returns 1 if the file was added, or 0. Check the C<$SimpleZipError> for a
+message.
+
 =item my $fh = $z->openMember(Name => "abc" [, OPTIONS]);
 
 This option returns a filehandle (C<$fh>)that allows you to write directly
@@ -623,20 +785,22 @@ the standard file output operators, like C<print>, are available to write
 to the zip archive.
 
 When you have finished writing data to the member, close the filehandle by
-letting it go out of scope or explicitly  using either
+letting it go out of scope or by explicitly using either of the two forms 
+shown below
 
     $fh->close()
     close $fh;
 
-In addition, if the enclosing zip object is closed whilst a filehandle is
-still open for a zip member, it will be closed automatically.
+Once the filehandle is closed you can then open another member with 
+C<openMember> or use the C<add> or
+<addString> or C<>addFilehandle> methods.
 
 Note that while a zip member has been opened with C<openMember>, you cannot
 use the C<add> or <addString> methods, or open another member with
 C<openMember>.
 
-You can then open another member with C<openMember> or use the C<add> or
-<addString> methods.
+Also, if the enclosing zip object is closed whilst a filehandle is
+still open for a zip member, it will be closed automatically.
 
 Returns a filehandle on success or C<undef> on failure.
 
@@ -1179,9 +1343,107 @@ variable to the C<Name> option, as shown below.
           },
           $dir);
 
-=head2 Writing a zip archive to a socket
+=head2 Using addFileHandle
 
-TODO - use of the Stream option
+Say you have a number of old-style ".Z" compressed files that you want
+to uncompress and put into a zip file. The script below, Z2zip.pl, will
+do just that 
+
+    use strict;
+    use warnings;
+    
+    use Archive::Zip::SimpleZip qw($SimpleZipError);
+    
+    die "Usage: Z2zip.pl zipfilename file1.Z file2.Z...\n"
+        unless @ARGV >= 2 ;
+    
+    my $zipFile = shift ;
+    my $zip = new Archive::Zip::SimpleZip $zipFile
+                or die "Cannot create zip file '$zipFile': $SimpleZipError";
+    
+    for my $Zfile (@ARGV)
+    {
+        my $cleanName = $Zfile ;
+        $cleanName =~ s/\.Z$//;
+    
+        print "Adding $cleanName\n" ;
+    
+        open my $z, "uncompress -c $Zfile |" ;
+    
+        $zip->addFileHandle($z, Name => $cleanName) 
+            or die "Cannot addFileHandle '$cleanName': $SimpleZipError\n" ;
+    }
+
+=head2 Another filehandle example - Working with Net::FTP
+
+Say you want to read all the json files from ftp://ftp.perl.org/pub/CPAN/ 
+using Net::FTP and write them directly
+to a zip archive without having to store them in the filesystem first.
+
+Here are a couple of ways to do that. The first uses the C<openMember> method
+in conjunction with the C<Net::FTP::get> method as shown below. 
+
+    use strict;
+    use warnings;
+
+    use Net::FTP;
+    use Archive::Zip::SimpleZip qw($SimpleZipError);
+
+    my $zipFile = "json.zip";
+    my $host = 'ftp.perl.org';
+    my $path = "/pub/CPAN";    
+    
+    my $zip = new Archive::Zip::SimpleZip $zipFile
+            or die "Cannot create zip file '$zipFile': $SimpleZipError";
+
+    my $ftp = new Net::FTP($host)
+        or die "Cannot connect to $host: $@";
+
+    $ftp->login("anonymous",'-anonymous@')
+        or die "Cannot login ", $ftp->message;
+
+    $ftp->cwd($path)
+        or die "Cannot change working directory ", $ftp->message;
+    
+    my @files = $ftp->ls()
+        or die "Cannot ls", $ftp->message;
+
+    for my $file ( grep { /json$/ } @files)
+    {
+        print " Adding $file\n" ;
+
+        my $zipMember = $zip->openMember(Name => $file)
+            or die "Cannot openMember file '$file': $SimpleZipError\n" ;
+
+        $ftp->get($file, $zipMember)
+            or die "Cannot get", $ftp->message;
+    }
+
+
+Alternatively, Net::FTP allows a read filehandle to be opened for a file to 
+transferred using the C<retr> method. 
+This filehandle can be I<dropped> into a zip archive using C<addFileHandle>.
+The code below is a rewrite of the for loop in the previous version that 
+shows how this is done.
+    
+    for my $file ( grep { /json$/ } @files)
+    {
+        print " Adding $file\n" ;
+
+        my $fh = $ftp->retr($file) 
+            or die "Cannot get", $ftp->message;
+            
+        $zip->addFileHandle($fh, Name => $file)
+            or die "Cannot addFileHandle file '$file': $SimpleZipError\n" ;
+            
+        $fh->close()
+            or die "Cannot close", $ftp->message;
+    }
+
+One point to be aware of with the C<Net::FTP::retr>. Not all FTP servers 
+support it. See L<Net::FTP> for details of how to find out what features
+an FTP server implements.
+
 
 =head1 Importing 
 
@@ -1249,7 +1511,7 @@ constructor.
 =head1 FAQ
 
 
-=head2 Can SimpleZip update an existing Zip file.
+=head2 Can SimpleZip update an existing Zip file?
 
 No. You can only create a zip file from scratch.
 
@@ -1281,8 +1543,6 @@ See previous question.
 Streaming mode allows you to write a zip file in situation where you cannot
 seek backwards/forwards. The classic examples are when you are working with
 sockets or need to write the zip file to STDOUT. 
-
-TODO - PUT EXAMPLE code that writes to a socket
 
 By default C<Archive::Zip::SimpleZip> does I<not> use streaming mode when
 writing to a zip file (you need to set the C<Stream> option to 1 to enable

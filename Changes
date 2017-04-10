@@ -1,6 +1,15 @@
 CHANGES
 -------
 
+  0.010 10 April 2017
+  
+      * Makefile.PL
+        #120084: Need Fix for Makefile.PL depending on . in @INC
+
+      * added autoflush option.
+      
+      * croak if attempt to freeze/thaw SimpleZip object 
+      
   0.009 17 February 2013
   
       * added addFileHandle method.

@@ -5,9 +5,9 @@ use warnings;
 
 require 5.006;
 
-use IO::Compress::Zip 2.060 qw(:all);
-use IO::Compress::Base::Common  2.060 ();
-use IO::Compress::Adapter::Deflate 2.060 ;
+use IO::Compress::Zip 2.061 qw(:all);
+use IO::Compress::Base::Common  2.061 ();
+use IO::Compress::Adapter::Deflate 2.061 ;
 
 use Fcntl ();
 use File::Spec ();
@@ -19,7 +19,7 @@ require Exporter ;
 our ($VERSION, @ISA, @EXPORT_OK, %EXPORT_TAGS, $SimpleZipError);
 
 $SimpleZipError= '';
-$VERSION = "0.009";
+$VERSION = "0.010";
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw( $SimpleZipError ) ;
@@ -40,14 +40,15 @@ our %PARAMS = (
         'canonicalname' => [IO::Compress::Base::Common::Parse_boolean,   1],
         'textflag'      => [IO::Compress::Base::Common::Parse_boolean,   0],
         'storelinks'    => [IO::Compress::Base::Common::Parse_boolean,   0],
+        'autoflush'     => [IO::Compress::Base::Common::Parse_boolean,   0],        
         #'storedirs'    => [IO::Compress::Base::Common::Parse_boolean,   0],
         'encode'       => [IO::Compress::Base::Common::Parse_any,        undef],
         #'extrafieldlocal'  => [IO::Compress::Base::Common::Parse_any,    undef],
         #'extrafieldcentral'=> [IO::Compress::Base::Common::Parse_any,    undef],
         'filtercontainer' => [IO::Compress::Base::Common::Parse_code,  undef],
+#        'time'          => [IO::Compress::Base::Common::Parse_any,       undef],
+#        'extime'        => [IO::Compress::Base::Common::Parse_any,       undef],        
         
-        
-
         # Zlib
         'level'         => [IO::Compress::Base::Common::Parse_signed,    Z_DEFAULT_COMPRESSION],
         'strategy'      => [IO::Compress::Base::Common::Parse_signed,    Z_DEFAULT_STRATEGY],
@@ -55,7 +56,6 @@ our %PARAMS = (
         # Lzma
         'preset'        => [IO::Compress::Base::Common::Parse_unsigned, 6],
         'extreme'       => [IO::Compress::Base::Common::Parse_boolean,  0],
-
         
         # Bzip2
         'blocksize100k' => [IO::Compress::Base::Common::Parse_unsigned,  1],
@@ -245,6 +245,9 @@ sub _newStream
         $self->{Zip} = IO::Compress::Base::Common::createSelfTiedObject('IO::Compress::Zip', \$SimpleZipError);    
         $self->{Zip}->_create($options, $self->{FH})        
             or die "_create $SimpleZipError";
+        $self->{Zip}->_autoflush()
+            if  $options->getValue('autoflush');       
+            
     }
     else {
         $self->{Zip}->_newStream($options)
@@ -438,6 +441,8 @@ sub openMember
 
     $self->_newStream(undef, $got);
   
+#  if (1)
+#  {
     my $z = IO::Compress::Base::Common::createSelfTiedObject("Archive::Zip::SimpleZip::Handle", \$SimpleZipError) ;
 
     $self->{Raw} = 1;
@@ -446,14 +451,36 @@ sub openMember
     *$z->{SZ} = $self;
     Scalar::Util::weaken *$z->{SZ}; # for 5.8
     
-    return $z;        
+    return $z;
+#  }
+#  else
+#  { 
+#    my $handle = Symbol::gensym();
+#    tie *$handle, "Archive::Zip::SimpleZip::Handle", $self, $self->{Zip};  
+#    
+#    $self->{Raw} = 1;      
+#    
+#    return $handle;
+#  }      
 }
+
+sub STORABLE_freeze
+{
+    my $type = ref shift;
+    croak "Cannot freeze $type object\n";
+}
+
+sub STORABLE_thaw
+{
+    my $type = ref shift;
+    croak "Cannot thaw $type object\n";
+}
+
 
 
 {
     package Archive::Zip::SimpleZip::Handle ;
-
-          
+              
     sub TIEHANDLE
     {
         return $_[0] if ref($_[0]);
@@ -573,8 +600,148 @@ sub openMember
     *EOF      = \&eof;
     *CLOSE    = \&close;
     *BINMODE  = \&binmode;
-
 }
+
+#{
+#    package Archive::Zip::SimpleZip::HandleNEW ;
+#
+## TODO - fix this
+##    require Tie::Handle;
+##
+##    @ISA = qw(Tie::Handle);
+##@ISA = qw(IO::Handle) ;
+#              
+#    sub TIEHANDLE
+#    {
+#        my $class = shift;
+#        my $parent = shift;
+#        my $zip = shift;
+#        my $errorRef = shift;
+#        
+#        my %obj = (
+#            Zip  => $zip ,
+#            SZ   => $parent,
+#            Open => 1,
+#        ) ;
+#
+#        Scalar::Util::weaken $obj{SZ}; # for 5.8  
+#        return bless \%obj, $class;  
+#    }
+#      
+#    sub UNTIE
+#    {
+#        my $self = shift ;
+#    }
+#    
+#    sub DESTROY
+#    {
+#        my $self = shift ;
+#        local ($., $@, $!, $^E, $?);
+#        $self->close() ;
+#    
+#        # TODO - memory leak with 5.8.0 - this isn't called until 
+#        #        global destruction
+#        #
+#        %{ $self } = () ;
+#        undef $self ;
+#    }
+#             
+#    sub close
+#    {
+#        my $self = shift ;
+#        return 1 if ! $self->{Open};
+#        
+#        $self->{Open} = 0 ;
+#        
+##        untie *$self 
+##            if $] >= 5.008 ;
+#
+#        if (defined $self->{SZ})
+#        {
+#            $self->{SZ}{Raw} = undef ;
+#            $self->{SZ} = undef ;
+#        }
+#
+#        1;
+#    }
+#    
+#    sub print
+#    {
+#        my $self = shift;
+#        $self->_stdPreq() or return 0 ;    
+#        
+#        $self->{Zip}->print(@_);
+#    }
+#    
+#    sub printf
+#    {
+#        my $self = shift;
+#        $self->_stdPreq() or return 0 ;
+#        
+#        $self->{Zip}->printf(@_);
+#    }
+#    
+#    sub syswrite
+#    {
+#        my $self = shift;
+#        $self->_stdPreq() or return 0 ;
+#        
+#        $self->{Zip}->syswrite(@_);
+#    }
+#    
+#    sub tell
+#    {
+#        my $self = shift;
+#        $self->_stdPreq() or return 0 ;
+#        
+#        $self->{Zip}->tell(@_);
+#    }
+#    
+#    sub eof
+#    {
+#        my $self = shift;
+#        $self->_stdPreq() or return 0 ;
+#        
+#        $self->{Zip}->eof;
+#    }
+#
+#    sub _stdPreq
+#    {
+#        my $self = shift;
+#                                           
+#        return _setError("Zip file closed") 
+#            if ! defined defined $self->{SZ} || ! $self->{SZ}{Open} ; 
+#            
+#                            
+#        return _setError("openMember filehandle closed") 
+#            if  ! $self->{Open} || ! defined $self->{SZ}{Raw};
+#            
+#        return 0 
+#            if $self->{SZ}{Error} ; 
+#                          
+#         return 1;    
+#    }
+#    
+#    sub _setError
+#    {  
+#        $Archive::Zip::SimpleZip::SimpleZipError = $_[0] ;
+#        return 0;
+#    }        
+#       
+#    sub binmode { 1 }
+##    sub clearerr { $Archive::Zip::SimpleZip::SimpleZipError = '' }
+#
+#    *FILENO   = \&fileno;
+#    *PRINT    = \&print;
+#    *PRINTF   = \&printf;
+#    *WRITE    = \&syswrite;
+#    *write    = \&syswrite;
+#    *TELL     = \&tell;
+##    sub IO::Handle::tell { bless $_[0], "Archive::Zip::SimpleZip::Handle" ; Archive::Zip::SimpleZip::Handle::tell @_ };
+#    *EOF      = \&eof;
+#    *CLOSE    = \&close;
+#    *BINMODE  = \&binmode;
+#}
 
 1;
 
@@ -661,7 +828,7 @@ file output functions, like C<print>.
 
     $z->close();
 
-You can also "drop" a filehandle into
+You can also "drop" a filehandle into a zip archive. 
 
     use Archive::Zip::SimpleZip qw($SimpleZipError) ;
 
@@ -1027,6 +1194,15 @@ The default is 0.
 =head2 Other Options
 
 =over 5
+
+=item C<< AutoFlush => 0|1 >>
+
+When true this option enabled flushing of the underlying filehandle after
+each write/print operation.
+
+If SimpleZip is writing to a buffer, this option is ignored.
+
+
 
 =item C<< Comment => $comment >>
 
@@ -1570,7 +1746,7 @@ See the Changes file.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2012-2013 Paul Marquess. All rights reserved.
+Copyright (c) 2012-2017 Paul Marquess. All rights reserved.
 
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

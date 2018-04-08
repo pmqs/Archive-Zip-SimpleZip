@@ -20,6 +20,6 @@ no_index:
     - t
     - private
 requires:
-  IO::Compress::Base: '2.08'
-version: '0.020'
+  IO::Compress::Base: '2.081'
+version: '0.021'
 x_serialization_backend: 'CPAN::Meta::YAML version 0.018'

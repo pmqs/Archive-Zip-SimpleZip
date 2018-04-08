@@ -34,11 +34,11 @@
       },
       "runtime" : {
          "requires" : {
-            "IO::Compress::Base" : "2.08"
+            "IO::Compress::Base" : "2.081"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "0.020",
+   "version" : "0.021",
    "x_serialization_backend" : "JSON::PP version 2.27400_02"
 }

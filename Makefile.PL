@@ -19,7 +19,7 @@ WriteMakefile(
     (
       $ENV{SKIP_FOR_CORE}
         ? ()
-	    : (PREREQ_PM   => { 'IO::Compress::Base' => 2.080,
+	    : (PREREQ_PM   => { 'IO::Compress::Base' => 2.081,
                           }
 	      )
     ),

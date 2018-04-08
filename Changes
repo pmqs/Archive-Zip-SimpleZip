@@ -1,6 +1,10 @@
 CHANGES
 -------
 
+  0.020 2 April 2018
+
+      * added Archive::Zip::SimpleUnzip
+
   0.010 10 April 2017
   
       * Makefile.PL

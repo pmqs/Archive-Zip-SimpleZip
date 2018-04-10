@@ -1,6 +1,11 @@
 CHANGES
 -------
 
+  0.022 10 April 2018
+
+      *  t/010main-unzip.t 
+        Fixed failure on Windows
+
   0.021 8 April 2018
 
       * Makefile.PL

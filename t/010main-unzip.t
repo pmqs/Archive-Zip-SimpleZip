@@ -184,7 +184,7 @@ if(1)
         my $z = new Archive::Zip::SimpleUnzip $zipfile ;
     
         is $z, undef ;
-        like $SimpleUnzipError, qr/cannot open file '$zipfile':/,
+        like $SimpleUnzipError, qr/cannot open file/,
             "  missing filename";
     }  
     

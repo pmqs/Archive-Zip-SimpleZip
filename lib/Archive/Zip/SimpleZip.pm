@@ -19,7 +19,7 @@ require Exporter ;
 our ($VERSION, @ISA, @EXPORT_OK, %EXPORT_TAGS, $SimpleZipError);
 
 $SimpleZipError= '';
-$VERSION = "0.021";
+$VERSION = "0.022";
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw( $SimpleZipError ) ;

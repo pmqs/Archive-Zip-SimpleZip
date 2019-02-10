@@ -1,4 +1,5 @@
 language: perl
 os:
   - linux
-  
+  - windows
+  - osx

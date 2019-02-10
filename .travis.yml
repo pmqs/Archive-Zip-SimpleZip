@@ -1,17 +1,10 @@
 language: perl
 os:
   - linux
-jobs:
-  include:
-    - stage: Windows
-      os: windows
-      language: shell
-      before_install:
-        - cinst -y strawberryperl
-        - export "PATH=/c/Strawberry/perl/site/bin:/c/Strawberry/perl/bin:/c/Strawberry/c/bin:$PATH"
-      install:
-        - cpanm --notest --installdeps .
-      script:
-        - perl Makefile.PL
-        - gmake
-        - gmake test
+  - windows
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then cinst -y strawberryperl   ; fi
+  - f [[ "$TRAVIS_OS_NAME" == "windows" ]]; then export "PATH=/c/Strawberry/perl/site/bin:/c/Strawberry/perl/bin:/c/Strawberry/c/bin:$PATH" ; fi
+install:
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then cpanm --notest --installdeps . ; fi
+

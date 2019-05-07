@@ -224,6 +224,27 @@ sub extract # to file/buffer
     
 }
 
+sub extractToFile {
+    my $member = shift;
+    my $fname = shift;
+
+    my $buff_size = 4194304;
+
+    my $fh = $member->open();
+    binmode $fh;
+
+    my $buff;
+    open my $DEST, ">$fname" or Carp::croak "Can't open $fname $!";
+    binmode $DEST;
+    while (read($fh, $buff, $buff_size)) {
+        print $DEST $buff;
+    }
+    close $DEST;
+    close $fh;
+
+    return 1;
+}
+
 sub content
 {
     my $self = shift;
@@ -967,6 +988,12 @@ Returns the uncompressed content.
 =item $fh = $m->open()
 
 Returns a filehandle that can be used to read the uncompressed content.
+
+=back
+
+=item $m->extractToFile($filename)
+
+Extract content of member to file $filename
 
 =back
 

@@ -621,8 +621,7 @@ if (1)
         my $canonical = $member->canonicalName();
         # diag "Processing member $name [$canonical]"  ;
 
-        ok $member->extract(), "extracted '$name' to '$canonical'"
-            or diag `ls -l ; find . -ls`;
+        ok $member->extract(), "extracted '$name' to '$canonical'";
         ok -e $name, "$name exists" ;
         expectedType($name, $create{$name});
 

@@ -1,5 +1,4 @@
 
-
 BEGIN {
     if ($ENV{PERL_CORE}) {
 	chdir 't' if -d 't';
@@ -15,7 +14,6 @@ use Test::More ;
 use CompTestUtils;
 use File::Spec ;
 use Devel::Peek;
-use Cwd;
 
 use Carp;
 # $SIG{ __DIE__ } = sub { Carp::confess( @_ ) };
@@ -26,16 +24,36 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 6980 + $extra ;
+    plan tests => 4163 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('IO::Compress::Zip', qw(zip $ZipError)) ;
-    use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError ZIP_CM_DEFLATE ZIP_CM_BZIP2 ZIP_CM_STORE)) ;    
-    use_ok('Archive::Zip::SimpleUnzip', qw($SimpleUnzipError)) ;
+    use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError ZIP_CM_STORE ZIP_CM_DEFLATE ZIP_CM_BZIP2 ZIP_CM_LZMA)) ;    
+    use_ok('Archive::Zip::StreamedUnzip', qw($StreamedUnzipError)) ;
     
     # eval { require Encode ;  import Encode }
     #use_ok('Encode');
 }
+
+
+eval ' use IO::Uncompress::Bunzip2 2.082 ;';
+eval ' use IO::Uncompress::RawInflate 2.082 ;';
+eval ' use IO::Uncompress::UnLzma 2.082 ;';
+#    eval ' use IO::Uncompress::UnXz 2.082 ;';
+
+my %methodNames;
+
+$methodNames{ZIP_CM_STORE()} = 'Store';
+$methodNames{ZIP_CM_DEFLATE()} = 'Deflate' ;
+$methodNames{ZIP_CM_BZIP2()} = 'Bzip2'  ;
+$methodNames{ZIP_CM_LZMA()} = 'LZMA' ;
+
+my %methodsAvailable;
+
+$methodsAvailable{ZIP_CM_STORE()} = 'Store';
+$methodsAvailable{ZIP_CM_DEFLATE()} = 'Deflate' if defined $IO::Uncompress::RawInflate::VERSION;
+$methodsAvailable{ZIP_CM_BZIP2()} = 'Bzip2' if defined $IO::Uncompress::Bunzip2::VERSION ;
+$methodsAvailable{ZIP_CM_LZMA()} = 'LZMA' if defined $IO::Uncompress::UnLzma::VERSION ;
 
 my $symlink_exists = eval { symlink("", ""); 1 } ;
 
@@ -78,9 +96,9 @@ sub createZip
     my $filename = shift;
     my @data = @{ shift @_ };
     # my %extra = %{ shift @_ // {} };
-    my @extra = @_ ? %{ shift @_ } : () ;
+    my %extra = @_ ? %{ shift @_ } : {} ;
     
-    my $z = new Archive::Zip::SimpleZip $filename, @extra, CanonicalName => 0 ;
+    my $z = new Archive::Zip::SimpleZip $filename, %extra, CanonicalName => 0 ;
     isa_ok $z, "Archive::Zip::SimpleZip";
     
     for my $x (@data)
@@ -102,41 +120,6 @@ sub createZip
     }    
 }
 
-sub createZipByName
-{
-    my $filename = shift;
-    my %data = %{ shift @_ };
-    # my %extra = %{ shift @_ // {} };
-    my @extra = @_ ? %{ shift @_ } : () ;
-    
-    my $z = new Archive::Zip::SimpleZip $filename, @extra, CanonicalName => 0 ;
-    isa_ok $z, "Archive::Zip::SimpleZip";
-    
-    for my $name (keys %data)
-    {     
-        my ($payload, $expectedType, $opts) = @{ $data{$name} };
-        #diag "add [$name][$payload]"; 
-        ok $z->addString($payload, Name => $name, @$opts), "Added $name" ;
-    }
-    ok $z->close(), "createZipByName: closed";
-
-    my $entries = scalar keys %data;
-    my @got = getContent($filename);
-    is @got, $entries, "createZipByName: Added $entries entry in zip";
-    my %got = map { $_->{Name} => $_ } @got;
-
-    for my $have (keys %got)
-    {
-        ok exists $data{$have}, "createZipByName: $have exists" ;
-        is $got{$have}{Payload}, $data{$have}[0], "createZipByName: Payload ok for $have";
-    }
-    # for (0 .. $entries-1)
-    # {
-    #     # is $got[$_]{Name}, canonFile($data[$_][0]), "Added Name ok";
-    #     is $got[$_]{Name}, $data[$_][0], "Added Name ok";
-    #     is $got[$_]{Payload}, $data[$_][1], "Added Payload ok";
-    # }    
-}
 sub canonFile
 {
     IO::Compress::Zip::canonicalName($_[0], 0);
@@ -195,10 +178,10 @@ if(1)
     
     {
         title "no zip filname";
-        my $z = new Archive::Zip::SimpleUnzip ;
+        my $z = new Archive::Zip::StreamedUnzip ;
     
         is $z, undef ;
-        is $SimpleUnzipError, "Missing Filename",
+        is $StreamedUnzipError, "Missing Filename",
             "  missing filename";
     }
     
@@ -206,10 +189,10 @@ if(1)
     {
         title "directory";
         my $lex = new LexDir my $dir;
-        my $z = new Archive::Zip::SimpleUnzip $dir ;
+        my $z = new Archive::Zip::StreamedUnzip $dir ;
     
         is $z, undef ;
-        is $SimpleUnzipError, "Illegal Filename",
+        is $StreamedUnzipError, "Illegal Filename",
             "  missing filename";
     }    
  
@@ -218,10 +201,10 @@ if(1)
         my $lex = new LexDir my $dir;
         my $zipfile = File::Spec->catfile($dir, "not", "exist", "x.zip");
         
-        my $z = new Archive::Zip::SimpleUnzip $zipfile ;
+        my $z = new Archive::Zip::StreamedUnzip $zipfile ;
     
         is $z, undef ;
-        like $SimpleUnzipError, qr/cannot open file/,
+        like $StreamedUnzipError, qr/cannot open file/,
             "  missing filename";
     }  
     
@@ -238,10 +221,10 @@ if(1)
 
 #        ok ! -r $zipfile, "  zip file not readable";
                
-#        my $z = new Archive::Zip::SimpleUnzip $zipfile ;
+#        my $z = new Archive::Zip::StreamedUnzip $zipfile ;
    
 #        is $z, undef ;
-#        is $SimpleUnzipError, "Illegal Filename",
+#        is $StreamedUnzipError, "Illegal Filename",
 #            "  Illegal Filename";
            
 #        chmod 0777, $zipfile ;           
@@ -250,10 +233,10 @@ if(1)
             
     {
         title "filename undef";
-        my $z = new Archive::Zip::SimpleUnzip undef;
+        my $z = new Archive::Zip::StreamedUnzip undef;
     
         is $z, undef ;
-        is $SimpleUnzipError, "Illegal Filename",
+        is $StreamedUnzipError, "Illegal Filename",
             "  missing filename";
     }    
     
@@ -261,12 +244,12 @@ if(1)
     {
         title "Bad parameter in new";
         my $lex = new LexFile my $zipfile;        
-        eval { my $z = new Archive::Zip::SimpleUnzip $zipfile, fred => 1 ; };
+        eval { my $z = new Archive::Zip::StreamedUnzip $zipfile, fred => 1 ; };
     
-        like $@,  qr/Archive::Zip::SimpleUnzip: unknown key value(s) fred at/,
+        like $@,  qr/Archive::Zip::StreamedUnzip: unknown key value(s) fred at/,
             "  value  is bad";
                    
-        like $SimpleUnzipError, qr/Archive::Zip::SimpleUnzip: unknown key value(s) fred at/,
+        like $StreamedUnzipError, qr/Archive::Zip::StreamedUnzip: unknown key value(s) fred at/,
             "  missing filename";
     }   
             
@@ -286,23 +269,27 @@ sub testType
     die "Bad test '$expectedType'";
 }
 
+
+
 # TODO - workout available compressors
+SKIP:
 if (1)
 {
-    for my $method ( ZIP_CM_DEFLATE, ZIP_CM_BZIP2, ZIP_CM_STORE )
-    # for my $method ( ZIP_CM_DEFLATE )
+    for my $method ( ZIP_CM_STORE, ZIP_CM_DEFLATE, ZIP_CM_BZIP2 )
     {
+        my $methodName = $methodsAvailable{$method};
+        skip "Skipping method $methodNames{$method} ($method): No uncompressor installed", 1
+            if ! defined $methodName ;  
+
         for my $comment ('', "abcde")
-        # for my $comment ("abcde")
         {
             for my $streamed (0, 1) #, 1)
             {
                 for my $to ( qw(filehandle filename buffer))
-                # for my $to ( qw(filename)) #  filename buffer))
                 {
                     for my $zip64 (0, 1)
                     {
-                        title "** TO $to, Method $method, Comment '$comment', Streamed $streamed. Zip64 $zip64";
+                        title "** TO $to, Method $methodName($method), Comment '$comment', Streamed $streamed. Zip64 $zip64";
                 
                         my $lex = new LexFile my $name2 ;
                         my $output;
@@ -340,25 +327,10 @@ if (1)
                                                     Zip64      => $zip64
                                                     } ) ;
                         
-                        my $z = new Archive::Zip::SimpleUnzip $zipfile ;
-                        isa_ok $z, "Archive::Zip::SimpleUnzip";
-                    
-                        {
-                            title "Names";
-                            is $z->names(), scalar(@$create), "correct number of entries in zip file";
-                            is_deeply [ $z->names() ], [ map { $_->[0] } @$create ], "names ok" ;
-                        }
-                        {
-                            title "zip comment";
-                            is $z->comment(), $comment, "Zip comment is '$comment'";
-                        }
-                        
-                        {
-                            title "Exists";
-                            ok $z->exists("fred3"), "fred3 exists";
-                            ok ! $z->exists("fred99"), "fred99 does not exist";
-                        }
-                        
+                        my $z = new Archive::Zip::StreamedUnzip $zipfile ;
+                        isa_ok $z, "Archive::Zip::StreamedUnzip";
+
+                       
                         my $element ;
                         my @got = ();
                         my $payload = '';
@@ -372,9 +344,8 @@ if (1)
                             my $expectedType = $input->[2];            
                             
                             $element = $z->next();
-                            isa_ok $element, "Archive::Zip::SimpleUnzip::Member";
+                            isa_ok $element, "Archive::Zip::StreamedUnzip::Member";
                             is $element->name(), $name, "Name is '$name'";
-                            is $element->comment(), '', "No comment in '$name";
                             is $element->content(), $expected, "Payload ok in '$name'";
                             ok testType($element, $expectedType), "Type is '$expectedType'";
                             ok $element->close();
@@ -388,13 +359,12 @@ if (1)
                             my $expectedType = $input->[2];            
                                                 
                             my $element = $z->next();
-                            isa_ok $element, "Archive::Zip::SimpleUnzip::Member";
+                            isa_ok $element, "Archive::Zip::StreamedUnzip::Member";
                             is $element->name(), $name, "Name is '$name'";
-                            is $element->comment(), "member comment", "comment ok in '$name'";
                             ok testType($element, $expectedType), "Type is '$expectedType'";
                             
                             my $fh = $element->open();
-                            isa_ok $fh, "Archive::Zip::SimpleUnzip::Handle";
+                            isa_ok $fh, "Archive::Zip::StreamedUnzip::Handle";
                             ok !$fh->eof(), "!eof";
                             ok ! eof($fh), "!eof";
                             is tell($fh), 0, "tell == 0";
@@ -402,7 +372,7 @@ if (1)
                             
                             is $fh->read($payload, 1024), length($expected); 
                             is tell($fh), length($expected), "tell == 5"
-                                or diag $SimpleUnzipError ;
+                                or diag $StreamedUnzipError ;
                             ok $fh->eof(), "eof";
                             ok eof($fh), "eof";  
                                 
@@ -417,9 +387,8 @@ if (1)
                             my $expectedType = $input->[2];            
                                                 
                             $element = $z->next();
-                            isa_ok $element, "Archive::Zip::SimpleUnzip::Member";
+                            isa_ok $element, "Archive::Zip::StreamedUnzip::Member";
                             is $element->name(), $name, "Name is '$name'";
-                            is $element->comment(), "", "Blank comment in '$name'"; 
                             ok testType($element, $expectedType), "Type is '$expectedType'";
 
                             my $fh = $element->open();
@@ -440,9 +409,8 @@ if (1)
                             my $expectedType = $input->[2];            
                                                 
                             $element = $z->next();
-                            isa_ok $element, "Archive::Zip::SimpleUnzip::Member";
+                            isa_ok $element, "Archive::Zip::StreamedUnzip::Member";
                             is $element->name(), $name, "Name is '$name'";
-                            is $element->comment(), "", "No comment in '$name'"; 
                             ok testType($element, $expectedType), "Type is '$expectedType'";
 
                             is $element->content(), $expected, "Payload ok in '$name'";
@@ -456,9 +424,8 @@ if (1)
                             my $expectedType = $input->[2];            
                                                 
                             $element = $z->next();
-                            isa_ok $element, "Archive::Zip::SimpleUnzip::Member";
+                            isa_ok $element, "Archive::Zip::StreamedUnzip::Member";
                             is $element->name(), $name, "Name is '$name'";
-                            is $element->comment(), "", "No comment in '$name'"; 
                             ok testType($element, $expectedType), "Type is '$expectedType'";
 
                             is $element->content(), $expected, "Payload ok in '$name'";
@@ -469,73 +436,39 @@ if (1)
                             ok ! defined $element, "No next";
                         }
                         
-                        {
-                            my $input = $create->[0] ;
-                            my $name = $input->[0];  
-                            my $expected = $input->[1];
-                            my $expectedType = $input->[2];            
+                        # {
+                        #     my $input = $create->[0] ;
+                        #     my $name = $input->[0];  
+                        #     my $expected = $input->[1];
+                        #     my $expectedType = $input->[2];            
 
-                            my $element = $z->member($name);
-                            isa_ok $element, "Archive::Zip::SimpleUnzip::Member";
-                            is $element->name(), $name, "Name is '$name'";
-                            ok testType($element, $expectedType), "Type is '$expectedType'";
+                        #     my $element = $z->member($name);
+                        #     isa_ok $element, "Archive::Zip::StreamedUnzip::Member";
+                        #     is $element->name(), $name, "Name is '$name'";
+                        #     ok testType($element, $expectedType), "Type is '$expectedType'";
 
-                            my $fh = $element->open();
-                            is $fh->tell(), 0;
-                            ok !$fh->eof();  
-                            my $payload = '';
-                            my $x;
+                        #     my $fh = $element->open();
+                        #     is $fh->tell(), 0;
+                        #     ok !$fh->eof();  
+                        #     my $payload = '';
+                        #     my $x;
 
-                            my $ix = 1; 
-                            while ($fh->read($x, 1))
-                            {
-                                $payload .= $x ;
-                                is $fh->tell(), $ix ++;
-                            }
-                            ok $fh->eof();   
-                            is $fh->tell(), length($expected);                            
-                            is $payload, $expected, "Payload ok in '$name'";
-                        }
+                        #     my $ix = 1; 
+                        #     while ($fh->read($x, 1))
+                        #     {
+                        #         $payload .= $x ;
+                        #         is $fh->tell(), $ix ++;
+                        #     }
+                        #     ok $fh->eof();   
+                        #     is $fh->tell(), length($expected);                            
+                        #     is $payload, $expected, "Payload ok in '$name'";
+                        # }
 
-                        {
-                            # member that does not exist
-
-                            my $name = "not-there" ;
-                            my $element = $z->member($name);
-                            isnt $element, "Archive::Zip::SimpleUnzip::Member";
-                            ok ! $element, "element object false";
-                            is $SimpleUnzipError, "Member '$name' not in zip" ;
-                        }
 
                         ok $z->close, "closed ok";
 
 
-                        {
-                            title "filesOnly" ;
-
-                            my $z = new Archive::Zip::SimpleUnzip $zipfile,  filesOnly => 1 ;
-                            isa_ok $z, "Archive::Zip::SimpleUnzip";
-                        
-                            {
-                                title "Names";
-                                my @files = map { $_->[0] } 
-                                           grep { $_->[2] eq 'file' } 
-                                           @$create;
-                                is $z->names(), scalar(@files), "correct number of entries in zip file";
-                                is_deeply [ $z->names() ], [ @files ], "names ok" ;
-                            }
-                            
-                            {
-                                title "zip comment";
-                                is $z->comment(), $comment, "Zip comment is '$comment'";
-                            }
-                            
-                            {
-                                title "Exists";
-                                ok $z->exists("fred3"), "fred3 exists";
-                                ok ! $z->exists("dir2/"), "dir2/ does not exist";
-                            } 
-                        }                       
+                    
                     }
                     
                             
@@ -545,114 +478,8 @@ if (1)
     }
 }
 
-{
-    package PushDir ;
 
-    use File::Path;
-    use Cwd;
-
-    sub new
-    {
-        my $class = shift ;
-        my $dir = shift ;
-
-        $dir = File::Temp::tempdir(DIR => '.', CLEANUP => 1)
-            if ! defined $dir;
-
-        my $cwd = cwd();
-
-        chdir $dir
-            or die "Cannot chdir to '$dir': $!";
-
-        bless \$cwd, $class
-    }
-
-    sub popdir
-    {
-        my $self = shift ;
-
-        chdir $$self 
-            or die "Cannor chdir to '$$self': $!";
-    }
-
-    sub DESTROY
-    {
-        my $self = shift ;
-
-        chdir $$self 
-            or die "Cannot chdir to '$$self': $!";
-    }
-}
-
-{
-    title "Extract";
-
-    # TODO - extract errors
-    use Cwd;
-
-    my $lex = new PushDir;
-    
-    my $output;
-    my $buffer;
-    my $zipfile = \$buffer;
-
-    # Create a zip with badly formed members
-    my %create = (
-        
-            #[ Name => "fred", Payload => "abcd"],
-            # name                       payload   type   opts
-            "fred1"                 => [ "abcd1", 'file', [] ],
-            "d1/fred2"              => [ "abcd2", 'file', [] ],
-            "d2/////d3/d4/fred3"    => [ "abcd3", 'file', [] ],
-            "./dir2/./d4/"          => [ "",      'dir',  [] ],
-            "d3/"                   => [ "",      'dir',  [] ],
-            "empty"                 => [ "",      'file', [] ],
-     ) ;
-
-    createZipByName($zipfile, \%create) ;
-
-    my $unzip = new Archive::Zip::SimpleUnzip $zipfile ;
-
-    is scalar $unzip->names(), keys %create;
-
-    while (my $member = $unzip->next())
-    {
-        my $name = $member->name();
-        my $canonical = $member->canonicalName();
-        # diag "Processing member $name [$canonical]"  ;
-
-        ok $member->extract(), "extracted '$name' to '$canonical'"
-            or diag `ls -l ; find . -ls`;
-        ok -e $name, "$name exists" ;
-        expectedType($name, $create{$name});
-
-        is readFile($canonical), $create{$name}[0], "$name - payload ok";
-        # diag `ls -l ; find . `;
-
-    }
-
-    # Extract by name
-
-    ok $unzip->extract("fred1", "abcd"), "extract to named file";
-    # diag `ls -l ; find . -ls`;
-
-    is readFile("abcd"), "abcd1", "abcd - payload ok";
-
-    my $m = $unzip->member("d1/fred2");
-    $m->extract("joe");
-    is readFile("joe"), "abcd2", "abcd - payload ok";
-}
-
-sub expectedType
-{
-    my $name = shift ;
-    my $data = shift ;
-
-    ok -f $name, "$name is a file" if $data->[1] eq 'file';
-    ok -d $name, "$name is a dir"  if $data->[1] eq 'dir';
-}
-
-exit;
+# exit;
 
 my $TestZipsDir = "./t/test-zips/";
 
@@ -665,12 +492,10 @@ SKIP:
     {
         title "Zip file with exactly 64k members (but not Zip64)" ;
 
-        my $z = new Archive::Zip::SimpleUnzip "$TestZipsDir/test64k-notzip64.zip" ;
-        isa_ok $z, "Archive::Zip::SimpleUnzip";
+        my $z = new Archive::Zip::StreamedUnzip "$TestZipsDir/test64k-notzip64.zip" ;
+        isa_ok $z, "Archive::Zip::StreamedUnzip";
 
         my $expectedMembers = 0xFFFF;
-
-        is $z->names(), $expectedMembers, "Exactly $expectedMembers members in zip" ;
 
         my $index = 1 ;
         while (my $member = $z->next())
@@ -688,12 +513,11 @@ SKIP:
     {
         title "Zip file with exactly 64k members (is Zip64)" ;
 
-        my $z = new Archive::Zip::SimpleUnzip "$TestZipsDir/test64k.zip" ;
-        isa_ok $z, "Archive::Zip::SimpleUnzip";
+        my $z = new Archive::Zip::StreamedUnzip "$TestZipsDir/test64k.zip" ;
+        isa_ok $z, "Archive::Zip::StreamedUnzip";
 
         my $expectedMembers = 0xFFFF;
 
-        is $z->names(), $expectedMembers, "Exactly $expectedMembers members in zip" ;
 
         my $index = 1 ;
         while (my $member = $z->next())
@@ -711,12 +535,10 @@ SKIP:
     {
         title "Zip file with  64k + 1 members (must be Zip64)" ;
 
-        my $z = new Archive::Zip::SimpleUnzip "$TestZipsDir/test64k-plus1.zip" ;
-        isa_ok $z, "Archive::Zip::SimpleUnzip";
+        my $z = new Archive::Zip::StreamedUnzip "$TestZipsDir/test64k-plus1.zip" ;
+        isa_ok $z, "Archive::Zip::StreamedUnzip";
 
         my $expectedMembers = 0xFFFF + 1;
-
-        is $z->names(), $expectedMembers, "Exactly $expectedMembers members in zip" ;
 
         my $index = 1 ;
         while (my $member = $z->next())
@@ -765,11 +587,8 @@ SKIP:
             my $entries = @$in ;
             my @names   = map { $_->[0] } @$in ;
 
-            my $z = new Archive::Zip::SimpleUnzip $zipfile ;
-            isa_ok $z, "Archive::Zip::SimpleUnzip", "created object for file $zipfile";
-            is $z->names(), $entries, "Has $entries members";
-            is_deeply [ $z->names() ], [ @names ], "names are ok" ;
-            is $z->comment(), $comment, "Zip comment is '$comment'";
+            my $z = new Archive::Zip::StreamedUnzip $zipfile ;
+            isa_ok $z, "Archive::Zip::StreamedUnzip", "created object for file $zipfile";
             for my $m (@$in)
             {
                 my $mname = shift @$m;
@@ -777,9 +596,8 @@ SKIP:
                 my $payload = shift @$m;
 
                 my $member = $z->member($mname);
-                isa_ok $member, "Archive::Zip::SimpleUnzip::Member";
+                isa_ok $member, "Archive::Zip::StreamedUnzip::Member";
                 is $member->name(), $mname, "Member Name is '$mname'" ;
-                is $member->comment(), $mcomment, "Member Comment is '$mcomment'";
                 if (ref $payload eq 'ARRAY')
                 {
                     # check lengths
@@ -798,5 +616,7 @@ SKIP:
     }
 
 }
+
+
 
 exit;

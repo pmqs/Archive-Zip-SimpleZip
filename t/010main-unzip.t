@@ -625,7 +625,14 @@ if (1)
         ok -e $name, "$name exists" ;
         expectedType($name, $create{$name});
 
-        is readFile($canonical), $create{$name}[0], "$name - payload ok";
+        if ($member->isDirectory())
+        {
+            ok -d $canonical, "directory $canonical ok" ;
+        }
+        else
+        {
+            is readFile($canonical), $create{$name}[0], "$name - payload ok"
+        }
         # diag `ls -l ; find . `;
 
     }

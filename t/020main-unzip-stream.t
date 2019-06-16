@@ -10,7 +10,7 @@ use lib qw(lib t t/compress);
 use strict;
 use warnings;
 
-use Test::More ; 
+use Test::More skip_all => "in progress"; 
 use CompTestUtils;
 use File::Spec ;
 use Devel::Peek;

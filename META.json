@@ -34,7 +34,8 @@
       },
       "runtime" : {
          "requires" : {
-            "IO::Compress::Base" : "2.081"
+            "IO::Compress::Base" : "2.081",
+            "Perl::OSType": "0"
          }
       }
    },
@@ -50,6 +51,6 @@
          "web" : "https://github.com/pmqs/Archive-Zip-SimpleZip"
       }
    },
-   "version" : "0.022",
+   "version" : "0.025",
    "x_serialization_backend" : "JSON::PP version 2.27300"
 }

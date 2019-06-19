@@ -21,9 +21,10 @@ no_index:
     - private
 requires:
   IO::Compress::Base: '2.081'
+  Perl::OSType: '0'
 resources:
   bugtracker: https://github.com/pmqs/Archive-Zip-SimpleZip/issues
   homepage: https://github.com/pmqs/Archive-Zip-SimpleZip
   repository: git://github.com/pmqs/Archive-Zip-SimpleZip.git
-version: '0.022'
+version: '0.025'
 x_serialization_backend: 'CPAN::Meta::YAML version 0.018'

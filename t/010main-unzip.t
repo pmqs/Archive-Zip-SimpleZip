@@ -26,7 +26,7 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 6980 + $extra ;
+    plan tests => 6985 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('IO::Compress::Zip', qw(zip $ZipError)) ;
@@ -658,9 +658,45 @@ sub expectedType
     ok -d $name, "$name is a dir"  if $data->[1] eq 'dir';
 }
 
+my $TestZipsDir = "./t/test-zips/";
+
+
+if (1)
+{
+    title "jar file with deflated directory";
+
+    # Create Jar as follow
+    #   echo test > file && jar c file > jar.zip
+
+    # Note the deflated directory META-INF with length 0 & size 2
+    #
+    # $ unzip -vl t/files/jar.zip
+    # Archive:  t/files/jar.zip
+    #  Length   Method    Size  Cmpr    Date    Time   CRC-32   Name
+    # --------  ------  ------- ---- ---------- ----- --------  ----
+    #        0  Defl:N        2   0% 2019-09-07 22:35 00000000  META-INF/
+    #       54  Defl:N       53   2% 2019-09-07 22:35 934e49ff  META-INF/MANIFEST.MF
+    #        5  Defl:N        7 -40% 2019-09-07 22:35 3bb935c6  file
+    # --------          -------  ---                            -------
+    #       59               62  -5%                            3 files
+
+    my $zipfile = "./t/files/jar.zip" ;
+    my $z = new Archive::Zip::SimpleUnzip $zipfile 
+        or diag $SimpleUnzipError ;
+    isa_ok $z, "Archive::Zip::SimpleUnzip";
+
+    my $lex = new PushDir;
+
+    ok ! -d "META-INF" ;
+
+    ok $z->extract("META-INF/")
+        or diag $SimpleUnzipError ;
+
+    ok -d "META-INF" ;
+}
+
 exit;
 
-my $TestZipsDir = "./t/test-zips/";
 
 SKIP:
 {

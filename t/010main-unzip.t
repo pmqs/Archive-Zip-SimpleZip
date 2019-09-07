@@ -26,7 +26,7 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 6985 + $extra ;
+    plan tests => 6987 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('IO::Compress::Zip', qw(zip $ZipError)) ;
@@ -693,6 +693,11 @@ if (1)
         or diag $SimpleUnzipError ;
 
     ok -d "META-INF" ;
+
+    my $member = $z->member("META-INF/");
+    isa_ok $member, "Archive::Zip::SimpleUnzip::Member";
+
+    ok $member->isDirectory();
 }
 
 exit;

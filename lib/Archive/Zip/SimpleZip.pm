@@ -1779,6 +1779,11 @@ larger than the non-streamed equivalent. If the files you archive are
 32-bit the overhead will be an extra 16 bytes per file written to the zip
 archive. For 64-bit it is 24 bytes per file.
 
+=head1 SUPPORT
+
+General feedback/questions/bug reports should be sent to 
+L<https://github.com/pmqs/Archive-Zip-SimpleZip/issues> (preferred) or
+L<https://rt.cpan.org/Public/Dist/Display.html?Name=Archive-Zip-SimpleZip>.
 
 =head1 SEE ALSO
 

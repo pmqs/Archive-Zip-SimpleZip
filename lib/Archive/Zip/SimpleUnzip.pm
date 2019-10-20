@@ -1330,6 +1330,13 @@ The following features are not currently supported.
 
 =back
 
+=head1 SUPPORT
+
+General feedback/questions/bug reports should be sent to 
+L<https://github.com/pmqs/Archive-Zip-SimpleZip/issues> (preferred) or
+L<https://rt.cpan.org/Public/Dist/Display.html?Name=Archive-Zip-SimpleZip>.
+
+
 =head1 SEE ALSO
 
 

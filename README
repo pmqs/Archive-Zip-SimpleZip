@@ -43,8 +43,12 @@ To install Archive::Zip::SimpleZip, run the command below:
 
     make install
 
-TROUBLESHOOTING
----------------
+SUPPORT
+-------
+
+General feedback/questions/bug reports should be sent to 
+https://github.com/pmqs/Archive-Zip-SimpleZip/issues (preferred) or
+https://rt.cpan.org/Public/Dist/Display.html?Name=Archive-Zip-SimpleZip.
 
 FEEDBACK
 --------

@@ -614,6 +614,8 @@ sub STORABLE_thaw
     package Archive::Zip::SimpleUnzip::Member;
 
     use IO::File ;
+    use File::Basename;
+    use File::Path ;
 
     sub name
     {
@@ -759,21 +761,37 @@ sub STORABLE_thaw
         my $self = shift;
         my $out  = shift;
 
-        my @path = _canonicalPath(defined $out ? $out : $self->{Info}{Name}) ;
-        my $filename = join '/', @path ;
-        pop @path
-            if ! $self->isDirectory();
-        
-        my @dir  ;
+        my $path ;
+        my $filename ;
 
-        while (@path)
+        if (defined $out)
         {
-            push @dir, shift @path;
-            my $dir = join '/', @dir;
-            mkdir $dir
-                or return _setError("Cannot create path '$dir': $!");
+            # User has supplied output file, so allow absolute path
+            $filename = $out;
+        }
+        else
+        {
+            # using name in zip file, so make it safe
+            my @path = _canonicalPath(defined $out ? $out : $self->{Info}{Name}) ;
+            $filename = join '/', @path ;
         }
 
+        $path = $self->isDirectory() ? $filename : dirname $filename;
+
+        if (defined $path)
+        {
+            # check path isn't already a plain file
+            return _setError("Path is not a directory '$path'")
+                if -e $path && ! -d $path ;
+
+            if (! -d $path)
+            {
+                my $error ;
+                File::Path::make_path($path, {error => \$error}) 
+                    or return _setError("Cannot create path '$path': $error");
+            }
+        }
+               
         # TODO - symlink
 
         if ($self->isFile())

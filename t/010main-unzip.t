@@ -26,7 +26,7 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 6987 + $extra ;
+    plan tests => 7020 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('IO::Compress::Zip', qw(zip $ZipError)) ;
@@ -587,7 +587,6 @@ if (1)
 {
     title "Extract";
 
-    # TODO - extract errors
     use Cwd;
 
     my $lex = new PushDir;
@@ -647,6 +646,61 @@ if (1)
     my $m = $unzip->member("d1/fred2");
     $m->extract("joe");
     is readFile("joe"), "abcd2", "abcd - payload ok";
+}
+
+{
+    title "Extract errors";
+    
+    use Cwd;
+
+    my $lex = new PushDir;
+    
+    my $output;
+    my $buffer;
+    my $zipfile = \$buffer;
+
+    createZipByName($zipfile,  
+            {
+                # name                    payload   type   opts
+                "f1"                 => [ "abcd1", 'file', [] ],
+                "d1/f2"              => [ "abcd2", 'file', [] ],
+                "d2/d3/f2"           => [ "abcd3", 'file', [] ],
+                "d3/f3"              => [ "",      'dir',  [] ],
+            } ) ;
+
+    my $unzip = new Archive::Zip::SimpleUnzip $zipfile ;
+
+
+    title "output file already exists & is writable, so overwrite";
+    my $out = "f1" ;
+    writeFile($out, "text");
+    ok -e $out ;
+    ok $unzip->extract("f1");
+    is readFile($out), "abcd1" ;
+
+    title "output file already exists & not-writable";
+    writeFile($out, "text");
+    chmod 0, $out ;
+    ok ! $unzip->extract("f1");
+    # if $SimpleUnzipError, //;
+    chmod 0777, $out ;
+    is readFile($out), "text" ;
+
+    title "output dir exists & is not writable" ;
+    mkdir "d1";
+    chmod 0, "d1";
+    ok ! $unzip->extract("d1/f2");
+    like $SimpleUnzipError, "/Cannot open file 'd1/f2':/";
+
+    chmod 0777, $out ;
+    ok ! -e "d1/f2";
+
+    title "part of output path exists, but is already a file";
+    writeFile("d3", "text");
+    ok -e $out ;
+    ok ! $unzip->extract("d3/f3");
+    like $SimpleUnzipError, "/Path is not a directory 'd3'/";
+    ok ! -e "d3/f3";
 }
 
 sub expectedType

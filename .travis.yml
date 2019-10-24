@@ -29,4 +29,4 @@ install:
   - cpan Scalar::Util
   - cpan Compress::Raw::Zlib 
   - cpan Compress::Raw::Bzip2
-  - cpan IO::Compress
+  - cpan IO::Compress::Unzip

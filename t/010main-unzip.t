@@ -26,7 +26,7 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 7020 + $extra ;
+    plan tests => 7236 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('IO::Compress::Zip', qw(zip $ZipError)) ;
@@ -535,7 +535,13 @@ if (1)
                                 ok $z->exists("fred3"), "fred3 exists";
                                 ok ! $z->exists("dir2/"), "dir2/ does not exist";
                             } 
+                            {
+                                title "Content";
+                                is $z->content("fred3"), "abcd3", "fred3 content ok";
+                                ok ! $z->content("bad1"), "dir2/ does not exist";
+                            }                             
                         }                       
+                        
                     }
                     
                             

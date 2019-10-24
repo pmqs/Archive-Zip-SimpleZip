@@ -275,12 +275,10 @@ sub content
     my $self = shift;
     my $name = shift;
 
-    return undef
-        if ! exists $self->{Members}{$name};
+    my $member = $self->member($name)
+        or return undef ;
 
-    $self->{Inner}->read(my $data, $self->{Info}{UncompressedLength});
-
-    return $data;
+    return $member->content();
 }
 
 sub exists

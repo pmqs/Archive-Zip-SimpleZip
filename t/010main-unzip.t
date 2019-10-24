@@ -26,7 +26,7 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 7236 + $extra ;
+    plan tests => 7232 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('IO::Compress::Zip', qw(zip $ZipError)) ;
@@ -691,15 +691,6 @@ if (1)
     # if $SimpleUnzipError, //;
     chmod 0777, $out ;
     is readFile($out), "text" ;
-
-    title "output dir exists & is not writable" ;
-    mkdir "d1";
-    chmod 0444, "d1";
-    ok ! $unzip->extract("d1/f2");
-    like $SimpleUnzipError, "/Cannot open file 'd1/f2':/";
-
-    chmod 0777, $out ;
-    ok ! -e "d1/f2";
 
     title "part of output path exists, but is already a file";
     writeFile("d3", "text");

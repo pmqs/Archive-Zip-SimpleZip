@@ -14,4 +14,4 @@ build_script:
   - gmake
 
 test_script:
-  - gmake test
+  - gmake test TEST_VERBOSE=1

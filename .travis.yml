@@ -1,7 +1,5 @@
 language: perl
 
-dist: trusty
-
 os:
   - linux
   

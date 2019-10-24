@@ -686,7 +686,7 @@ if (1)
 
     title "output file already exists & not-writable";
     writeFile($out, "text");
-    chmod 0, $out ;
+    chmod 0444, $out ;
     ok ! $unzip->extract("f1");
     # if $SimpleUnzipError, //;
     chmod 0777, $out ;
@@ -694,7 +694,7 @@ if (1)
 
     title "output dir exists & is not writable" ;
     mkdir "d1";
-    chmod 0, "d1";
+    chmod 0444, "d1";
     ok ! $unzip->extract("d1/f2");
     like $SimpleUnzipError, "/Cannot open file 'd1/f2':/";
 

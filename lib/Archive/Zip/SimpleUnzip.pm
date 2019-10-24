@@ -785,7 +785,7 @@ sub STORABLE_thaw
             if (! -d $path)
             {
                 my $error ;
-                File::Path::make_path($path, {error => \$error}) 
+                File::Path::mkpath($path, {error => \$error}) 
                     or return _setError("Cannot create path '$path': $error");
             }
         }

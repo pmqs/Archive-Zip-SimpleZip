@@ -1670,6 +1670,25 @@ One point to be aware of with the C<Net::FTP::retr>. Not all FTP servers
 support it. See L<Net::FTP> for details of how to find out what features
 an FTP server implements.
 
+=head2 Creating a Zip file from STDIN
+
+The script below, zipstdin. shows how to create a zip file using data read from STDIN.
+
+    use strict;
+    use warnings;
+
+    use Archive::Zip::SimpleZip qw($SimpleZipError);
+
+    my $zipFile = "stdin.zip";
+      
+    my $zip = new Archive::Zip::SimpleZip $zipFile
+            or die "Cannot create zip file '$zipFile': $SimpleZipError";
+    $zip->adFilehandle(STDIN, Name => "data.txt") ;
+
+or this, to do the whole thing from the commandline
+
+    echo abc | perl -MArchive::Zip::SimpleZip -e 'Archive::Zip::SimpleZip->new("stdin.zip")->addFileHandle(STDIN, Name => "data.txt")'
+    
 
 =head1 Importing 
 

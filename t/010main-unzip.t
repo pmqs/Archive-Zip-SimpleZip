@@ -26,13 +26,16 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 7232 + $extra ;
+    plan tests => 10341 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('IO::Compress::Zip', qw(zip $ZipError)) ;
-    use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError ZIP_CM_DEFLATE ZIP_CM_BZIP2 ZIP_CM_STORE)) ;    
+    use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError ZIP_CM_DEFLATE ZIP_CM_BZIP2 ZIP_CM_STORE ZIP_CM_LZMA)) ;    
     use_ok('Archive::Zip::SimpleUnzip', qw($SimpleUnzipError)) ;
-    
+
+    eval{ require IO::Uncompress::Adapter::UnLzma ;
+          import  IO::Uncompress::Adapter::UnLzma } ;
+
     # eval { require Encode ;  import Encode }
     #use_ok('Encode');
 }
@@ -286,12 +289,15 @@ sub testType
     die "Bad test '$expectedType'";
 }
 
-# TODO - workout available compressors
 if (1)
 {
-    for my $method ( ZIP_CM_DEFLATE, ZIP_CM_BZIP2, ZIP_CM_STORE )
+    SKIP:
+    for my $method ( ZIP_CM_DEFLATE, ZIP_CM_BZIP2, ZIP_CM_STORE, ZIP_CM_LZMA )
     # for my $method ( ZIP_CM_DEFLATE )
     {
+        skip "Skipping LZMA tests", 2568
+            if $method == ZIP_CM_LZMA && ! defined $IO::Uncompress::Adapter::UnLzma::VERSION ;
+
         for my $comment ('', "abcde")
         # for my $comment ("abcde")
         {
@@ -376,6 +382,7 @@ if (1)
                             is $element->name(), $name, "Name is '$name'";
                             is $element->comment(), '', "No comment in '$name";
                             is $element->content(), $expected, "Payload ok in '$name'";
+                            is $element->content(), $expected, "Payload again ok in '$name'";
                             ok testType($element, $expectedType), "Type is '$expectedType'";
                             ok $element->close();
                         }
@@ -391,6 +398,7 @@ if (1)
                             isa_ok $element, "Archive::Zip::SimpleUnzip::Member";
                             is $element->name(), $name, "Name is '$name'";
                             is $element->comment(), "member comment", "comment ok in '$name'";
+                            is $element->content(), $expected;
                             ok testType($element, $expectedType), "Type is '$expectedType'";
                             
                             my $fh = $element->open();
@@ -407,6 +415,11 @@ if (1)
                             ok eof($fh), "eof";  
                                 
                             is $payload, $expected, "payload ok in '$name'";
+
+                            ok $fh->close();
+
+                            is $element->content(), $expected;
+
                         }
                         
                         {
@@ -461,6 +474,7 @@ if (1)
                             is $element->comment(), "", "No comment in '$name'"; 
                             ok testType($element, $expectedType), "Type is '$expectedType'";
 
+                            is $element->content(), $expected, "Payload ok in '$name'";
                             is $element->content(), $expected, "Payload ok in '$name'";
                         }
 
@@ -533,11 +547,16 @@ if (1)
                             {
                                 title "Exists";
                                 ok $z->exists("fred3"), "fred3 exists";
+                                is $z->content("fred3"), "abcd3";
+                                is $z->content("fred3"), "abcd3";
+
+
                                 ok ! $z->exists("dir2/"), "dir2/ does not exist";
                             } 
                             {
                                 title "Content";
                                 is $z->content("fred3"), "abcd3", "fred3 content ok";
+                                ok ! $z->content("bad1"), "dir2/ does not exist";
                                 ok ! $z->content("bad1"), "dir2/ does not exist";
                             }                             
                         }                       
@@ -644,6 +663,7 @@ if (1)
 
     # Extract by name
 
+    is $unzip->content("fred1"), "abcd1";
     ok $unzip->extract("fred1", "abcd"), "extract to named file";
     # diag `ls -l ; find . -ls`;
 
@@ -652,6 +672,7 @@ if (1)
     my $m = $unzip->member("d1/fred2");
     $m->extract("joe");
     is readFile("joe"), "abcd2", "abcd - payload ok";
+    exit;
 }
 
 {

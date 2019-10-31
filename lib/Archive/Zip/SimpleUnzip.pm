@@ -141,29 +141,15 @@ sub DESTROY
     my $self = shift;
 }
 
-sub _readLocalHeader
+sub resetter
 {
-    my $self = shift;
+    my $inner = shift;
     my $member = shift;
 
-    my $inner = $self->{Inner};
-    my $status = $inner->smartSeek($member->{LocalHeaderOffset}, 0, SEEK_SET);
-
-    #*$inner->{InputLength} = undef;
-    #*$inner->{InputLengthRemaining} = undef;
-    #*$inner->{BufferOffset}      = 0 ;
-    #*$inner->{Prime}      = '' ;
-
-    $inner->_readFullZipHeader() ;
 
     *$inner->{NewStream} = 0 ;
     *$inner->{EndStream} = 0 ;
-#    *$inner->{CompressedInputLengthDone} = undef ;
-#    *$inner->{CompressedInputLength} = undef ;
     *$inner->{TotalInflatedBytesRead} = 0;
-#    $inner->reset();
-#    *$inner->{UnCompSize}->reset();
-#    *$inner->{CompSize}->reset();
     *$inner->{Info}{TrailerLength} = 0;
 
     # disable streaming if present & set sizes from central dir
@@ -174,7 +160,21 @@ sub _readLocalHeader
     *$inner->{ZipData}{CompressedLen} = $member->{CompressedLength};
     *$inner->{ZipData}{UnCompressedLen} = $member->{UncompressedLength};
     *$inner->{CompressedInputLengthRemaining} =
-            *$inner->{CompressedInputLength} = $member->{CompressedLength};
+            *$inner->{CompressedInputLength} = $member->{CompressedLength};    
+}
+
+sub _readLocalHeader
+{
+    my $self = shift;
+    my $member = shift;
+
+    my $inner = $self->{Inner};
+
+    resetter($inner, $member);
+
+    my $status = $inner->smartSeek($member->{LocalHeaderOffset}, 0, SEEK_SET);
+    $inner->_readFullZipHeader() ;
+    $member->{DataOffset} = $inner->smartTell();
 }
 
 sub comment
@@ -680,7 +680,12 @@ sub STORABLE_thaw
         my $self = shift;
         my $data ;
 
-        # $self->{Inner}->read($data, $self->{UncompressedLength});
+        my $inner = $self->{Inner};
+
+        $inner->reset() if $self->{NeedsReset}; $self->{NeedsReset} ++ ;
+        Archive::Zip::SimpleUnzip::resetter($inner, $self->{Info});
+
+        $inner->smartSeek($self->{Info}{DataOffset}, 0, SEEK_SET);
         $self->{Inner}->read($data, $self->{Info}{UncompressedLength});
 
         return $data;
@@ -700,6 +705,12 @@ sub STORABLE_thaw
 
         *$z->{Open} = 1 ;
         *$z->{SZ} = $self->{Inner};
+
+        my $inner = $self->{Inner};
+        $inner->reset() if $self->{NeedsReset}; $self->{NeedsReset} ++ ;
+        Archive::Zip::SimpleUnzip::resetter($self->{Inner}, $self->{Info});
+        $inner->smartSeek($self->{Info}{DataOffset}, 0, SEEK_SET);
+
         Scalar::Util::weaken *$z->{SZ}; # for 5.8
 
         $z;
@@ -1020,8 +1031,6 @@ Archive::Zip::SimpleUnzip is a module that allows reading of Zip archives.
 
 For writing Zip archives, there is a companion module,
 called L<Archive::Zip::SimpleZip>, that can create Zip archives.
-
-B<NOTE> This is late alpha quality code, so the interface may change.
 
 =head2 Features
 

@@ -8,6 +8,9 @@ install:
   - set PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
   - cd %APPVEYOR_BUILD_FOLDER%
   - cpanm --quiet --installdeps --with-develop --notest .
+  # Force install of latest IO::Compress::Zip
+  - cpanm IO::Compress::Zip
+  - perl -v
 
 build_script:
   - perl Makefile.PL

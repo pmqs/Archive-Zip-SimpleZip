@@ -10,6 +10,7 @@ install:
   - cpanm --quiet --installdeps --with-develop --notest .
   # Force install of latest IO::Compress::Zip
   - cpanm IO::Compress::Zip
+  - cpanm IO::Compress::Lzma
   - perl -v
 
 build_script:

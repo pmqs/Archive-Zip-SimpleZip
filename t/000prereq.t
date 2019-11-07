@@ -87,19 +87,19 @@ BEGIN
 
     if ($have{"Compress::Raw::Zlib"})
     {
-        my $ver = Compress::Raw::Zlib::zlib_version();
+        my $ver = eval { Compress::Raw::Zlib::zlib_version() } || "unknown";
         push @results, ["zlib", $ver] ;
     }
 
     if ($have{"Compress::Raw::Bzip2"})
     {
-        my $ver = Compress::Raw::Bzip2::bzlibversion();
+        my $ver = eval{ Compress::Raw::Bzip2::bzlibversion(); } || "unknown";
         push @results, ["bzip2", $ver] ;
     }
 
     if ($have{"Compress::Raw::Lzma"})
     {
-        my $ver = Compress::Raw::Lzma::lzma_version_string();
+        my $ver = eval { Compress::Raw::Lzma::lzma_version_string(); } || "unknown";
         push @results, ["lzma", $ver] ;
     }
 

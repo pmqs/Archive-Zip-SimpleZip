@@ -1,6 +1,12 @@
 CHANGES
 -------
 
+  0.027 7 November 2019
+
+        * t/000prereq.t
+          Print our versions of all modules used
+          c560193b1254d8515f2d880a713ba1ece888c0b9
+
   0.026 5 November 2019
 
         * Can't extract after read content

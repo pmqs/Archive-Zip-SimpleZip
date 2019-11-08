@@ -80,9 +80,9 @@ BEGIN
         my $v = defined $ver
                     ? $ver
                     : "Not Installed" ;
-        push @results, [$module, $ver] ;
+        push @results, [$module, $v] ;
         $have{$module} ++ 
-            if $v ;
+            if $ver ;
     }
 
     if ($have{"Compress::Raw::Zlib"})

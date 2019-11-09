@@ -30,4 +30,5 @@ install:
   #- cpan Compress::Raw::Zlib 
   #- cpan Compress::Raw::Bzip2
   - cpan IO::Uncompress::Unzip
+  - cpan IO::Compress::Zip  
   - cpan IO::Compress::Lzma

@@ -1,6 +1,13 @@
 CHANGES
 -------
 
+  0.030 9 November 2019
+
+        * t/010main-unzip.t fails
+          Issue triggered by a memory leak in Compress-Raw-Lzma.
+          Updating PREREQ_PM will force loading of fixed Compress-Raw-Lzma
+          https://github.com/pmqs/Archive-Zip-SimpleZip/issues/7
+
   0.029 8 November 2019
 
         * Fix Use of uninitialized value error

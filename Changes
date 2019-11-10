@@ -9,7 +9,7 @@ CHANGES
           318960e89674b2c3a450db972e8f27b14dd1d685 
 
         * Makefile.PL: Add IO::*::Lzma to "recommends"  list
-          8675d2421adc7c846a58cf6ddbffe255cf61a21d (HEAD -> master, origin/master)  0.030 9 November 2019
+          8675d2421adc7c846a58cf6ddbffe255cf61a21d
 
   0.030 9 November 2019
 

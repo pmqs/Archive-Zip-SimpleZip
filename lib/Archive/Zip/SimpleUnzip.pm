@@ -19,7 +19,7 @@ require Exporter ;
 
 our ($VERSION, @ISA, @EXPORT_OK, %EXPORT_TAGS, $SimpleUnzipError);
 
-$VERSION = '0.030';
+$VERSION = '0.031';
 $SimpleUnzipError = '';
 
 @ISA    = qw(IO::Uncompress::Unzip Exporter);

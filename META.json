@@ -1,5 +1,5 @@
 {
-   "abstract" : "Create and Read Zip Archives",
+   "abstract" : "Read and Write Zip Archives",
    "author" : [
       "Paul Marquess <pmqs@cpan.org>"
    ],
@@ -33,10 +33,14 @@
          }
       },
       "runtime" : {
+         "recommends" : {
+            "IO::Compress::Lzma" : "2.090",
+            "IO::Uncompress::UnLzma" : "2.090"
+         },
          "requires" : {
             "IO::Compress::Base" : "2.090",
             "IO::Uncompress::Base" : "2.090",
-            "Perl::OSType": "0"
+            "Perl::OSType" : "0"
          }
       }
    },

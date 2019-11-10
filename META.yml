@@ -1,5 +1,5 @@
 ---
-abstract: 'Create and Read Zip Archives'
+abstract: 'Read and Write Zip Archives'
 author:
   - 'Paul Marquess <pmqs@cpan.org>'
 build_requires:
@@ -19,6 +19,9 @@ no_index:
     - inc
     - t
     - private
+recommends:
+  IO::Compress::Lzma: '2.090'
+  IO::Uncompress::UnLzma: '2.090'
 requires:
   IO::Compress::Base: '2.090'
   IO::Uncompress::Base: '2.090'

@@ -24,8 +24,8 @@ before_install:
 
 install:
   - perl -V
-  - cpan-install  --update-prereqs
-  - cpan-install --deps 
+  - cpan-install  --update-prereqs --deps
+#   - cpan-install --deps 
   # Force latest version of these modules
   - cpanm Scalar::Util
   - cpanm Perl::OSType

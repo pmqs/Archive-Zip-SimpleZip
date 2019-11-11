@@ -27,8 +27,8 @@ install:
   - perl -V
   - cpan-install --deps
   # Force latest version of these modules
-  - cpan Scalar::Util
-  - cpan Perl::OSType
-  - cpan IO::Uncompress::Unzip
-  - cpan IO::Compress::Zip  
-  - cpan IO::Compress::Lzma
+  - cpanm Scalar::Util
+  - cpanm Perl::OSType
+  - cpanm IO::Uncompress::Unzip
+  - cpanm IO::Compress::Zip  
+  - cpanm IO::Compress::Lzma

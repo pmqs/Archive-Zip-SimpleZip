@@ -21,11 +21,11 @@ perl:
   
 before_install:
   - eval $(curl https://travis-perl.github.io/init) --auto
-  - cpan Test::Simple  
 
 install:
   - perl -V
-  - cpan-install --deps
+  - cpan-install  --update-prereqs
+  - cpan-install --deps 
   # Force latest version of these modules
   - cpanm Scalar::Util
   - cpanm Perl::OSType

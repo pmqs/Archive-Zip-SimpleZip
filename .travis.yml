@@ -5,10 +5,10 @@ os:
   
 perl:
   - "5.6"
-  #- "5.8"
+  - "5.8"
   #- "5.10"        
   #- "5.12"         
-  #- "5.14"         
+  - "5.14"         
   #- "5.16"         
   #- "5.18"         
   #- "5.20"         
@@ -24,7 +24,7 @@ before_install:
 
 install:
   - perl -V
-  # Force latest version of these modules 
+  # Force latest versions of prereq modules 
   # The cpan-install line is enough for perl >= 5.8
   #
   - cpan-install  --update-prereqs --deps
@@ -32,8 +32,8 @@ install:
   # These needed for 5.6
   # cpanm not supported on 5.6, so use cpan
   #
-  - cpan Scalar::Util
-  - cpan Perl::OSType
-  - cpan IO::Uncompress::Unzip
-  - cpan IO::Compress::Zip  
-  - cpan IO::Compress::Lzma
+  #- cpan Scalar::Util
+  #- cpan Perl::OSType
+  #- cpan IO::Uncompress::Unzip
+  #- cpan IO::Compress::Zip  
+  #- cpan IO::Compress::Lzma

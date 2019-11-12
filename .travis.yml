@@ -39,13 +39,13 @@ install:
     cpan Scalar::Util
 
   
-# install:
-#   - perl -V
-#   - echo $TRAVIS_PERL_VERSION
+install:
+  - perl -V
+  - echo $TRAVIS_PERL_VERSION
 #   # Force latest versions of prereq modules
 #   # The cpan-install line is enough for perl >= 5.8
 #   -stage newperl
-#   - cpan-install  --update-prereqs --deps
+  - cpan-install  --update-prereqs --deps
 #   - if perl = "5.6"
 #   - cpan Scalar::Util
 #   - cpan Perl::OSType

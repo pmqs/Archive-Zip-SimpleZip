@@ -24,7 +24,7 @@ before_install:
   - perl -V
   # Force latest versions of prereq modules 
   # The cpan-install line is enough for perl >= 5.8
-  - cpan-install  --update-prereqs --deps
+#   - cpan-install  --update-prereqs --deps
   
 # install:
 #   - perl -V
@@ -43,3 +43,6 @@ jobs:
       - cpan IO::Uncompress::Unzip
       - cpan IO::Compress::Zip  
       - cpan IO::Compress::Lzma
+   - perl: "5.10"
+    install:
+      - cpan-install  --update-prereqs --deps

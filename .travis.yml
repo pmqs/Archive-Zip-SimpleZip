@@ -26,15 +26,15 @@ before_install:
   # The cpan-install line is enough for perl >= 5.8
   - cpan-install  --update-prereqs --deps
   
-# # install:
-#   - perl -V
-#   # Force latest versions of prereq modules
-#   # The cpan-install line is enough for perl >= 5.8
-#   - cpan-install  --update-prereqs --deps
+# install:
+  - perl -V
+  # Force latest versions of prereq modules
+  # The cpan-install line is enough for perl >= 5.8
+  - cpan-install  --update-prereqs --deps
 
 # Force latest versions of prereq modules
 # cpanm not supported on 5.6, so use cpan
-jobs:
+matrix:
   include:
   - perl: "5.6"
     install:
@@ -43,6 +43,4 @@ jobs:
       - cpan IO::Uncompress::Unzip
       - cpan IO::Compress::Zip  
       - cpan IO::Compress::Lzma
-   - perl: "5.30"
-    install:
-      - cpan-install  --update-prereqs --deps
+

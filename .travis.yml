@@ -42,7 +42,6 @@ before_install:
 #   - cpan IO::Compress::Lzma
      
 before_script:
-  - echo $TRAVIS_PERL_VERSION
   if $TRAVIS_PERL_VERSION = "5.6"
   - cpan Scalar::Util
   - cpan Perl::OSType

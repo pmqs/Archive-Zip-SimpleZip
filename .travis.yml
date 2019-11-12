@@ -28,7 +28,7 @@ before_install:
   
 # install:
 #   - perl -V
-#   # Force latest versions of prereq modules 
+#   # Force latest versions of prereq modules
 #   # The cpan-install line is enough for perl >= 5.8
 #   - cpan-install  --update-prereqs --deps
 

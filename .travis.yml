@@ -18,17 +18,24 @@ perl:
   - "5.28"         
   - "5.30"         
   - "blead"  
-  
+    
 before_install:
   - eval $(curl https://travis-perl.github.io/init) --auto
-
-install:
   - perl -V
-  - cpan-install --deps
-  # Force latest version of these modules
-  - cpan Scalar::Util
-  #- cpan Compress::Raw::Zlib 
-  #- cpan Compress::Raw::Bzip2
-  - cpan IO::Uncompress::Unzip
-  - cpan IO::Compress::Zip  
-  - cpan IO::Compress::Lzma
+  # Force latest versions of prereq modules 
+  # The cpan-install line is enough for perl >= 5.8
+  - cpan-install --update-prereqs --deps
+
+# 5.6 is a special case - no cpanm available,
+# so force installation of dependencies with cpan
+install: >
+  if  [ "$TRAVIS_PERL_VERSION" = "5.6" ]; then
+    echo Special Case for 5.6
+    cpan Scalar::Util;
+    cpan Perl::OSType;
+    cpan IO::Uncompress::Unzip;
+    cpan IO::Compress::Zip  ;
+    cpan IO::Compress::Lzma;
+  else
+    echo TRAVIS_PERL_VERSION is $TRAVIS_PERL_VERSION
+  fi

@@ -10,7 +10,8 @@ use lib qw(lib t t/compress);
 use strict;
 use warnings;
 
-use Test::More skip_all => "in progress"; 
+use Test::More ; 
+
 use CompTestUtils;
 use File::Spec ;
 use Devel::Peek;
@@ -485,7 +486,7 @@ my $TestZipsDir = "./t/test-zips/";
 
 SKIP:
 {
-    skip "Skipping BIG tests", 67
+    skip "Skipping BIG tests", 42
         if ! -d $TestZipsDir;
 
     if (1)

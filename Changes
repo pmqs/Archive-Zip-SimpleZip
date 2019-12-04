@@ -1,6 +1,11 @@
 CHANGES
 -------
 
+  0.033 4 December 2019
+          
+        * fix typo
+          88221114c4edf938ad506845db9863db17f7492e
+
   0.032 24 November 2019
           
         * Add StreamedUnzip

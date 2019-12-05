@@ -1,10 +1,20 @@
 CHANGES
 -------
 
+  0.034 5 December 2019
+
+        * 000prereq.t - needs version 2.092 of dependencies
+          https://github.com/pmqs/Archive-Zip-SimpleZip/issues/11
+          330dfb7dda1b3016eec52dc1c90ff30110aa8f6a
+
   0.033 4 December 2019
           
         * fix typo
           88221114c4edf938ad506845db9863db17f7492e
+
+        * Makefile.PL: Add IO::Compress::Lzma to PREREQ_PM
+          https://github.com/pmqs/Archive-Zip-SimpleZip/issues/9
+          896604d5e525a22f25877f5595ffa94ffdd8a6cf
 
   0.032 24 November 2019
           

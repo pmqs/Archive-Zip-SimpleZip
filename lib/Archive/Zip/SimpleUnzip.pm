@@ -1195,12 +1195,12 @@ Returns a filehandle that can be used to read the uncompressed content.
 
 =item $bool = $m->isDirectory()
 
-Returns true is the member is a directory.
+Returns true if the member is a directory.
 Otherwise returns false.
 
 =item $bool = $m->isFile()
 
-Returns true is the member is standard file.
+Returns true if the member is standard file.
 Otherwise returns false.
 
 =back

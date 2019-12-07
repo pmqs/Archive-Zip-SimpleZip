@@ -24,7 +24,7 @@ Before you can build Archive-Zip-SimpleZip you need to have the following
 installed on your system:
 
     * Perl 5.006 or better. 
-    * IO::Compress version 2.088 or better.
+    * IO::Compress version 2.093 or better.
 
 BUILDING THE MODULE
 -------------------

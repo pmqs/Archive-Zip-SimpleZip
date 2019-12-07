@@ -5,9 +5,9 @@ use warnings;
 
 require 5.006;
 
-use IO::Compress::Zip 2.090 qw(:all);
-use IO::Compress::Base::Common  2.090 ();
-use IO::Compress::Adapter::Deflate 2.090 ;
+use IO::Compress::Zip 2.093 qw(:all);
+use IO::Compress::Base::Common  2.093 ();
+use IO::Compress::Adapter::Deflate 2.093 ;
 
 use Fcntl ();
 use File::Spec ();

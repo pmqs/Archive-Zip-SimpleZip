@@ -10,9 +10,9 @@ use IO::File;
 use Carp;
 use Scalar::Util ();
 
-use IO::Compress::Base::Common  2.091 qw(:Status);
-use IO::Compress::Zip::Constants 2.091 ;
-use IO::Uncompress::Unzip 2.091 ;
+use IO::Compress::Base::Common  2.093 qw(:Status);
+use IO::Compress::Zip::Constants 2.093 ;
+use IO::Uncompress::Unzip 2.093 ;
 
 
 require Exporter ;

@@ -7,7 +7,7 @@ use lib '.';
 use private::MakeUtil;
 use ExtUtils::MakeMaker 5.16 ;
 
-my $ParentVersion = 2.092 ;
+my $ParentVersion = 2.093 ;
 
 # Check if IO::Compress::Lzna is installed.
 # If it is, add to PREREQ_PM.

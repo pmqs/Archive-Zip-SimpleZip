@@ -633,6 +633,13 @@ sub STORABLE_thaw
         return 0;
     }
 
+    sub clearerr
+    {
+        my $self = shift;
+
+        return 0;
+    }
+
     sub binmode { 1 }
 #    sub clearerr { $Archive::Zip::SimpleZip::SimpleZipError = '' }
 

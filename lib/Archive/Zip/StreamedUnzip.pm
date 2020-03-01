@@ -201,7 +201,7 @@ sub ckParams
         my $self = shift;
 #        $self->_stdPreq() or return 0 ;
 
-        return substr($self->{Info}{Name}, -1, 1) eq '/' ; 
+        return substr($self->{Info}{Name}, -1, 1) eq '/' ;
     }
 
     sub isFile
@@ -472,10 +472,10 @@ Archive::Zip::StreamedUnzip - Read Zip Archives in streaming mode
 
 Archive::Zip::StreamedUnzip is a module that allows reading of Zip archives in streaming mode.
 This is useful if you are processing a zip coming directly off a socket without having to
-read the complete file into memory and/or store it on disk. Similarly it can be handy when 
+read the complete file into memory and/or store it on disk. Similarly it can be handy when
 woking with a pipelined command.
 
-Working with a streamed zip file does have limitations, so 
+Working with a streamed zip file does have limitations, so
 most of the time L<Archive::Zip::SimpleUnzip> and/or L<Archive::Zip> are a  better choice of
 module for reading file files.
 
@@ -723,7 +723,7 @@ The following features are not currently supported.
 
 =head1 SUPPORT
 
-General feedback/questions/bug reports should be sent to 
+General feedback/questions/bug reports should be sent to
 L<https://github.com/pmqs/Archive-Zip-SimpleZip/issues> (preferred) or
 L<https://rt.cpan.org/Public/Dist/Display.html?Name=Archive-Zip-SimpleZip>.
 

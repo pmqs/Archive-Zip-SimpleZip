@@ -67,9 +67,11 @@ BEGIN
                     Archive::Zip::SimpleUnzip
                     IO::Compress::Base
                     IO::Compress::Zip
+                    IO::Compress::Bzip2
                     IO::Compress::Lzma
                     IO::Uncompress::Base
                     IO::Uncompress::Unzip
+                    IO::Uncompress::Bunzip2
                     IO::Uncompress::UnLzma
                     Compress::Raw::Zlib
                     Compress::Raw::Bzip2

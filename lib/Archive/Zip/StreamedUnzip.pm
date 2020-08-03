@@ -10,9 +10,9 @@ use IO::File;
 use Carp;
 use Scalar::Util ();
 
-use IO::Compress::Base::Common  2.093 qw(:Status);
-use IO::Compress::Zip::Constants 2.093 ;
-use IO::Uncompress::Unzip 2.093 ;
+use IO::Compress::Base::Common  2.096 qw(:Status);
+use IO::Compress::Zip::Constants 2.096 ;
+use IO::Uncompress::Unzip 2.096 ;
 
 
 require Exporter ;
@@ -211,6 +211,14 @@ sub ckParams
 
         # TODO - test for symlink
         return ! $self->isDirectory() ;
+    }
+
+    sub isEncrypted
+    {
+        my $self = shift;
+        return $self->{Info}{Encrypted};
+        # my $gpFlag = unpack ("v", substr($self->{Info}{Header}, 4 + 2, 2));
+        # return $gpFlag & (0x01 | (1 << 6)) ;
     }
 
 # TODO

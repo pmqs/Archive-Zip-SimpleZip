@@ -34,12 +34,12 @@
       },
       "runtime" : {
          "recommends" : {
-            "IO::Compress::Lzma" : "2.093",
-            "IO::Uncompress::UnLzma" : "2.093"
+            "IO::Compress::Lzma" : "2.096",
+            "IO::Uncompress::UnLzma" : "2.096"
          },
          "requires" : {
-            "IO::Compress::Base" : "2.093",
-            "IO::Uncompress::Base" : "2.093",
+            "IO::Compress::Base" : "2.096",
+            "IO::Uncompress::Base" : "2.096",
             "Perl::OSType" : "0"
          }
       }
@@ -56,6 +56,6 @@
          "web" : "https://github.com/pmqs/Archive-Zip-SimpleZip"
       }
    },
-   "version" : "0.035",
+   "version" : "0.036",
    "x_serialization_backend" : "JSON::PP version 2.27300"
 }

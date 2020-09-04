@@ -1,6 +1,14 @@
 CHANGES
 -------
 
+  0.037 4 September 2020
+
+        * Support for XZ & Zstd compression
+          17f976cfea7169b487d044de5c2ace42058cdd5c
+
+        * trim whitespace
+          4951bf18e9bca1b0ee986d016f46c0134c9e2759
+
   0.036 3 August 2020
 
         * 111const-deflate.t - fix number of tests

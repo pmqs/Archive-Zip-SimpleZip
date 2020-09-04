@@ -25,11 +25,11 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 4163 + $extra ;
+    plan tests => 7931 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('IO::Compress::Zip', qw(zip $ZipError)) ;
-    use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError ZIP_CM_STORE ZIP_CM_DEFLATE ZIP_CM_BZIP2 ZIP_CM_LZMA)) ;
+    use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError ZIP_CM_STORE ZIP_CM_DEFLATE ZIP_CM_BZIP2 ZIP_CM_LZMA ZIP_CM_XZ ZIP_CM_ZSTD)) ;
     use_ok('Archive::Zip::StreamedUnzip', qw($StreamedUnzipError)) ;
 
     # eval { require Encode ;  import Encode }
@@ -37,10 +37,11 @@ BEGIN {
 }
 
 
-eval ' use IO::Uncompress::Bunzip2 2.082 ;';
-eval ' use IO::Uncompress::RawInflate 2.082 ;';
-eval ' use IO::Uncompress::UnLzma 2.082 ;';
-#    eval ' use IO::Uncompress::UnXz 2.082 ;';
+eval ' use IO::Uncompress::Bunzip2 2.096 ;';
+eval ' use IO::Uncompress::RawInflate 2.096 ;';
+eval ' use IO::Uncompress::UnLzma 2.096 ;';
+eval ' use IO::Uncompress::UnXz 2.096 ;';
+eval ' use IO::Uncompress::UnZstd 2.096 ;';
 
 my %methodNames;
 
@@ -48,6 +49,8 @@ $methodNames{ZIP_CM_STORE()} = 'Store';
 $methodNames{ZIP_CM_DEFLATE()} = 'Deflate' ;
 $methodNames{ZIP_CM_BZIP2()} = 'Bzip2'  ;
 $methodNames{ZIP_CM_LZMA()} = 'LZMA' ;
+$methodNames{ZIP_CM_XZ()} = 'XZ' ;
+$methodNames{ZIP_CM_ZSTD()} = 'ZSTD' ;
 
 my %methodsAvailable;
 
@@ -55,6 +58,8 @@ $methodsAvailable{ZIP_CM_STORE()} = 'Store';
 $methodsAvailable{ZIP_CM_DEFLATE()} = 'Deflate' if defined $IO::Uncompress::RawInflate::VERSION;
 $methodsAvailable{ZIP_CM_BZIP2()} = 'Bzip2' if defined $IO::Uncompress::Bunzip2::VERSION ;
 $methodsAvailable{ZIP_CM_LZMA()} = 'LZMA' if defined $IO::Uncompress::UnLzma::VERSION ;
+$methodsAvailable{ZIP_CM_XZ()} = 'XZ' if defined $IO::Uncompress::UnXz::VERSION ;
+$methodsAvailable{ZIP_CM_ZSTD()} = 'ZSTD' if defined $IO::Uncompress::UnZstd::VERSION ;
 
 my $symlink_exists = eval { symlink("", ""); 1 } ;
 
@@ -272,25 +277,30 @@ sub testType
 
 
 
-# TODO - workout available compressors
-SKIP:
 if (1)
 {
-    for my $method ( ZIP_CM_STORE, ZIP_CM_DEFLATE, ZIP_CM_BZIP2 )
+    for my $method ( ZIP_CM_DEFLATE, ZIP_CM_BZIP2, ZIP_CM_STORE, ZIP_CM_LZMA, ZIP_CM_XZ, ZIP_CM_ZSTD)
     {
-        my $methodName = $methodsAvailable{$method};
-        skip "Skipping method $methodNames{$method} ($method): No uncompressor installed", 1
-            if ! defined $methodName ;
-
         for my $comment ('', "abcde")
         {
-            for my $streamed (0, 1) #, 1)
+            for my $streamed (0, 1)
             {
                 for my $to ( qw(filehandle filename buffer))
                 {
+                    SKIP:
                     for my $zip64 (0, 1)
                     {
+                        my $methodName = $methodsAvailable{$method} || '';
+
                         title "** TO $to, Method $methodName($method), Comment '$comment', Streamed $streamed. Zip64 $zip64";
+                        skip "Skipping method $methodNames{$method} ($method): No uncompressor installed", 85
+                            if ! $methodName && $method == ZIP_CM_ZSTD ;
+
+                        skip "Skipping method $methodNames{$method} ($method): No uncompressor installed", 113
+                            if ! $methodName ;
+
+                        skip "Skipping Zstd with Streaming", 57
+                            if  $method == ZIP_CM_ZSTD && $streamed;
 
                         my $lex = new LexFile my $name2 ;
                         my $output;

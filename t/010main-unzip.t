@@ -26,15 +26,21 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 10341 + $extra ;
+    plan tests => 15477 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('IO::Compress::Zip', qw(zip $ZipError)) ;
-    use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError ZIP_CM_DEFLATE ZIP_CM_BZIP2 ZIP_CM_STORE ZIP_CM_LZMA)) ;
+    use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError ZIP_CM_DEFLATE ZIP_CM_BZIP2 ZIP_CM_STORE ZIP_CM_LZMA ZIP_CM_XZ ZIP_CM_ZSTD)) ;
     use_ok('Archive::Zip::SimpleUnzip', qw($SimpleUnzipError)) ;
 
     eval{ require IO::Uncompress::Adapter::UnLzma ;
           import  IO::Uncompress::Adapter::UnLzma } ;
+
+    eval{ require IO::Uncompress::Adapter::UnXz ;
+          import  IO::Uncompress::Adapter::UnXz } ;
+
+    eval{ require IO::Uncompress::Adapter::UnZstd ;
+          import  IO::Uncompress::Adapter::UnZstd } ;
 
     # eval { require Encode ;  import Encode }
     #use_ok('Encode');
@@ -291,24 +297,30 @@ sub testType
 
 if (1)
 {
-    SKIP:
-    for my $method ( ZIP_CM_DEFLATE, ZIP_CM_BZIP2, ZIP_CM_STORE, ZIP_CM_LZMA )
-    # for my $method ( ZIP_CM_DEFLATE )
+    for my $method ( ZIP_CM_DEFLATE, ZIP_CM_BZIP2, ZIP_CM_STORE, ZIP_CM_LZMA, ZIP_CM_XZ, ZIP_CM_ZSTD)
     {
-        skip "Skipping LZMA tests", 2568
-            if $method == ZIP_CM_LZMA && ! defined $IO::Uncompress::Adapter::UnLzma::VERSION ;
-
         for my $comment ('', "abcde")
-        # for my $comment ("abcde")
         {
-            for my $streamed (0, 1) #, 1)
+            for my $streamed (0, 1)
             {
                 for my $to ( qw(filehandle filename buffer))
-                # for my $to ( qw(filename)) #  filename buffer))
                 {
+                    SKIP:
                     for my $zip64 (0, 1)
                     {
                         title "** TO $to, Method $method, Comment '$comment', Streamed $streamed. Zip64 $zip64";
+
+                        skip "Skipping LZMA tests", 213
+                            if $method == ZIP_CM_LZMA && ! defined $IO::Uncompress::Adapter::UnLzma::VERSION ;
+
+                        skip "Skipping XZ tests", 213
+                            if $method == ZIP_CM_XZ && ! defined $IO::Uncompress::Adapter::UnXz::VERSION ;
+
+                        skip "Skipping ZSTD tests", 213
+                            if $method == ZIP_CM_ZSTD && ! defined $IO::Uncompress::Adapter::UnZstd::VERSION ;
+
+                        skip "Skipping Streaming tests with ZSTD tests", 213
+                            if $streamed && $method == ZIP_CM_ZSTD && defined $IO::Uncompress::Adapter::UnZstd::VERSION ;
 
                         my $lex = new LexFile my $name2 ;
                         my $output;

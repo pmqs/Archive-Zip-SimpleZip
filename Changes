@@ -1,6 +1,11 @@
 CHANGES
 -------
 
+  0.038 7 September 2020
+
+        * make test more robust
+          0321ab07c1ffcd644a0948b68a677f0be10300f1
+
   0.037 4 September 2020
 
         * Support for XZ & Zstd compression

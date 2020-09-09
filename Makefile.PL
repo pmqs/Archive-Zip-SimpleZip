@@ -79,7 +79,7 @@ WriteMakefile(
                             'IO::Compress::Base'        => $ParentVersion,
                             'IO::Uncompress::Base'      => $ParentVersion,
                             'IO::Compress::Zip'         => $ParentVersion,
-                            'IO::Uncompress::Umzip'     => $ParentVersion,
+                            'IO::Uncompress::Unzip'     => $ParentVersion,
                             'IO::Compress::RawDeflate'  => $ParentVersion,
                             'IO::Uncompress::RawInflate'=> $ParentVersion,
                             'Perl::OSType'              => 0,

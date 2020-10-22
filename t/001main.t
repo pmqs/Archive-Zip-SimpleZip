@@ -22,7 +22,7 @@ BEGIN {
     $extra = 1
         if eval { require Test::NoWarnings ;  import Test::NoWarnings; 1 };
 
-    plan tests => 833 + $extra ;
+    plan tests => 835 + $extra ;
 
     use_ok('IO::Uncompress::Unzip', qw(unzip $UnzipError)) ;
     use_ok('Archive::Zip::SimpleZip', qw($SimpleZipError)) ;
@@ -1519,6 +1519,17 @@ SKIP:
         is $got[2]{Name},    $canonical ? canonFile($name3) : $name3;
         is $got[2]{Payload}, $data3;
     }
+}
+
+{
+    title "autoflush" ;
+    # https://github.com/pmqs/Archive-Zip-SimpleZip/issues/16
+
+    my $output ;
+    my $z = new Archive::Zip::SimpleZip \$output, AutoFlush => 1;
+    isa_ok $z, "Archive::Zip::SimpleZip";
+
+    $z->addString("abcd", name => "fred");
 }
 
 __END__

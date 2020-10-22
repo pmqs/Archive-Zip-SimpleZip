@@ -245,7 +245,7 @@ sub _newStream
         $self->{Zip} = IO::Compress::Base::Common::createSelfTiedObject('IO::Compress::Zip', \$SimpleZipError);
         $self->{Zip}->_create($options, $self->{FH})
             or die "_create $SimpleZipError";
-        $self->{Zip}->_autoflush()
+        $self->{Zip}->autoflush()
             if  $options->getValue('autoflush');
 
     }

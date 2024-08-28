@@ -1,9 +1,11 @@
 Changes
-lib/Archive/Zip/SimpleZip.pm
 lib/Archive/Zip/SimpleUnzip.pm
+lib/Archive/Zip/SimpleZip.pm
 lib/Archive/Zip/StreamedUnzip.pm
 Makefile.PL
 MANIFEST
+META.json			Module JSON meta-data (added by MakeMaker)
+META.yml			Module YAML meta-data (added by MakeMaker)
 private/MakeUtil.pm
 README
 t/000prereq.t
@@ -12,10 +14,8 @@ t/010main-unzip.t
 t/020main-unzip-stream.t
 t/111const-deflate.t
 t/999pod.t
+t/compress/CompTestUtils.pm
+t/files/jar.zip
 t/meta-json.t
 t/meta-yaml.t
-t/compress/CompTestUtils.pm
 t/mkTestZips
-t/files/jar.zip
-META.yml                                 Module YAML meta-data (added by MakeMaker)
-META.json                                Module JSON meta-data (added by MakeMaker)

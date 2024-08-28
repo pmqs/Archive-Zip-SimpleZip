@@ -1,6 +1,7 @@
 *~
 .*
 *.bak
+*.old
 *.swp
 *.tar
 *.tar.gz

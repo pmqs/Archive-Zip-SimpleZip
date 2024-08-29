@@ -38,7 +38,7 @@ sub runScript
     my $command = shift ;
     my $expected = shift ;
 
-    my $lex = new LexFile my $stderr ;
+    my $lex = LexFile->new(my $stderr) ;
 
     my $cmd = "$command 2>$stderr";
     my $stdout = `$cmd` ;
@@ -65,7 +65,7 @@ sub getContent
 {
     my $filename = shift;
 
-    my $u = new IO::Uncompress::Unzip $filename, Append => 1, @_
+    my $u = IO::Uncompress::Unzip->new($filename, Append => 1, @_)
         or die "Cannot open $filename: $UnzipError";
 
     isa_ok $u, "IO::Uncompress::Unzip";
@@ -106,7 +106,7 @@ sub canonFile
     ###########
     title "gz2zip" ;
 
-    my $lex = new LexFile my $gz1, my $gz2, my $gz3, my $zipfile;
+    my $lex = LexFile->new(my $gz1, my $gz2, my $gz3, my $zipfile);
 
     ok gzip(\"gzip 1" => $gz1), "  gzip 1 ok";
     ok gzip(\"gzip 2" => $gz2), "  gzip 2 ok";
